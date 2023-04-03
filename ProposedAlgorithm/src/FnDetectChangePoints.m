@@ -6,23 +6,40 @@ function trace = FnDetectChangePoints(xout, num_var)
 
     chpoints = [];
     chp_depths = zeros(max_deriv+1,1);
+    chp_var = cell(num_var,1);
     for i = 1:num_var
         %add new found changepoints of i'th trace to set
-        chpoints = union(chpoints, findChangePoints(xout(:,i:num_var:end),0,1,size(xout,1)));
+        new_chp = findChangePoints(xout(:,i:num_var:end),0,1,size(xout,1));
+        chpoints = union(chpoints, new_chp);
+        chp_var(i) = {new_chp};
     end
     
-    % remove redundant chpoints
+    %remove redundant chpoints
     chpoints = filterindx(chpoints,windowSize);
-    %xout_reduced= xout(:, 1:num_var);
 
     %remove last segment if too short
     if(chpoints(end,1)-chpoints(end-1,1) < 2 * windowSize)
         xout = xout(1:chpoints(end-1,1),:);
-        chpoints = chpoints(1:end-1,1);
+        chpoints = chpoints(1:(end-1),1);
+        for i = 1:num_var
+            current_chps = cell2mat(chp_var(i));
+            chp_var(i) = {current_chps(1:(end-1),1)};
+        end
+    end
+
+    %merge redundant chpoints also for chp_var
+    for i = 1:num_var
+        current_chps = cell2mat(chp_var(i));
+        for j = 1:length(current_chps)
+            [val,ind] = min(abs(chpoints-current_chps(j,1)));
+            current_chps(j,1) = chpoints(ind,1);
+        end
+        chp_var(i) = {current_chps};
     end
 
     trace.x = xout;
     trace.chpoints = chpoints;
+    trace.chpoints_per_var = chp_var;
     trace.ud = [];
     trace.labels_num = []; 
     trace.labels_trace = [];  
@@ -38,31 +55,24 @@ function locs = findChangePoints(xout,depth,starting,ending)
     end
     der = xout(starting:ending,depth+1);
 
-    %distanceMetric of DTW
+    %distance metric
     dist = zeros(windowSize,1);
-    %diagonility metric of DTW
-    diag = zeros(windowSize,1);
     %because before and after points are needed keep distance to bounds
     for i = (windowSize+1):(length(der)-windowSize)
         %points right before i
         before = der((i-windowSize):(i-1));
         %points right after i
         after = der((i+1):(i+windowSize));
-        %calc DTW (corrected by initial values)
-        [dist_new, i_x, i_y] = dtw(before-before(1),after-after(1));
+        %calc Euclidean Distance
+        dist_new = sum(abs(before-before(1)-(after-after(1))));
         %update distance metric
         dist = [dist; dist_new];
-        %update diagnoality metric
-        diag_new = corrcoef(i_x,i_y);
-        diag = [diag; diag_new(1,2)];
     end
 
-    %find dips in diagonality (maybe move minpaekheight to paras?)
-    %[pksDiag,locsDiag] = findpeaks(1-diag,"MinPeakHeight",0.05);
     %find peaks in distance (maybe move mindipdepth to paras?)
     [pksDist,locsDist] = findpeaks(dist,"MinPeakHeight",5);
-    %both are possible changepoints
-    locsHere = locsDist+starting-1; %union(locsDiag,locsDist);
+    %local to global index conversion
+    locsHere = locsDist+starting-1;
     locsHere = sort(locsHere);
     %get rid of too close changepoints
     locsHere = filterindx(locsHere,1.5*windowSize);
