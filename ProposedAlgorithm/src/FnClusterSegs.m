@@ -1,31 +1,55 @@
 function trace = FnClusterSegs(trace, x, ud)
     global winlen thresClusterMax thresClusterMin num_var offsetCluster facThres;
 
-    segIndex = [0,0]; 
+    segIndex = [0,0];
+    segIndex_var = cell(num_var,1);
+    segIndex_var(1:num_var,1) = {[0,0]};
     for i=1:length(trace)  
+        %segments globally
         chpoints = (trace(i).chpoints);
         %start and end point of each segment are saved
         chsegments = [chpoints(1:end-1), chpoints(2:end)];
         chsegments(2:end,1) = chsegments(2:end,1)+1;
         %in x all traces are appended thus offsets need to be added for
         %changepoints to be consistent with x (and ud)
-        segIndex = [segIndex; segIndex(end,2) + chsegments]; 
+        segIndex = [segIndex; segIndex(end,2) + chsegments];
+
+        %segments per output variable
+        chp_var = (trace(i).chpoints_per_var);
+        for j=1:num_var
+            %start and end position of each segment saved
+            chp_curr = cell2mat(chp_var(j,1));
+            chsegments_var = [chp_curr(1:end-1),chp_curr(2:end)];
+            chsegments_var(2:end,1) = chsegments_var(2:end,1)+1;
+            %offset so that indices are relative to x
+            segIndex_var_temp = cell2mat(segIndex_var(j,1));
+            segIndex_var(j,1) = {[segIndex_var_temp; segIndex_var_temp(end,2) + chsegments_var]};
+        end 
     end
     %dummy line is deleted (used so that first append offset is 0)
     segIndex(1,:) = [];
+    for j=1:num_var
+        segIndex_var_temp = cell2mat(segIndex_var(j,1));
+        segIndex_var_temp(1,:) = [];
+        segIndex_var(j,1) = {segIndex_var_temp};
+    end
     
     %create metric
-    dist_all = zeros(size(segIndex,1),size(segIndex,1),num_var);
-    diag_all = zeros(size(segIndex,1),size(segIndex,1),num_var);
-    combined_metric = zeros(size(segIndex,1),size(segIndex,1),num_var);
+    dist_all = cell(num_var,1);
+    diag_all = cell(num_var,1);
+    combined_metric = cell(num_var,1);
     for k = 1:num_var
-        for i = 1:size(segIndex,1)
-            start_i = segIndex(i,1)+winlen;
-            end_i = segIndex(i,2)-winlen;
+        segIndex_curr = cell2mat(segIndex_var(k,1));
+        dist_curr = zeros(size(segIndex_curr,1),size(segIndex_curr,1));
+        diag_curr = zeros(size(segIndex_curr,1),size(segIndex_curr,1));
+        combined_curr = zeros(size(segIndex_curr,1),size(segIndex_curr,1));
+        for i = 1:size(segIndex_curr,1)
+            start_i = segIndex_curr(i,1)+winlen;
+            end_i = segIndex_curr(i,2)-winlen;
             seg_i = x(start_i:end_i,k+offsetCluster);
-            for j = i:size(segIndex,1)
-                start_j = segIndex(j,1)+winlen;
-                end_j = segIndex(j,2)-winlen;
+            for j = i:size(segIndex_curr,1)
+                start_j = segIndex_curr(j,1)+winlen;
+                end_j = segIndex_curr(j,2)-winlen;
                 seg_j = x(start_j:end_j,k+offsetCluster);
                 common_len = min(size(seg_i,1),size(seg_j,1));
                 
@@ -57,80 +81,115 @@ function trace = FnClusterSegs(trace, x, ud)
                 sim_index_start = 0.5*dist_start+0.5*(1-diag_start);
 
                 if (sim_index_start <= sim_index_end)
-                    dist_all(i,j,k) = dist_start;
-                    diag_all(i,j,k) = diag_start;
-                    combined_metric(i,j,k) = sim_index_start;
+                    dist_curr(i,j) = dist_start;
+                    diag_curr(i,j) = diag_start;
+                    combined_curr(i,j) = sim_index_start;
+                    %Due to symmetry
+                    dist_curr(j,i) = dist_start;
+                    diag_curr(j,i) = diag_start;
+                    combined_curr(j,i) = sim_index_start;
                 else
-                    dist_all(i,j,k) = dist_end;
-                    diag_all(i,j,k) = diag_end;
-                    combined_metric(i,j,k) = sim_index_end;
+                    dist_curr(i,j) = dist_end;
+                    diag_curr(i,j) = diag_end;
+                    combined_curr(i,j) = sim_index_end;
+                    %Due to symmetry
+                    dist_curr(j,i) = dist_end;
+                    diag_curr(j,i) = diag_end;
+                    combined_curr(j,i) = sim_index_end;
                 end
             end
         end
-        %dist_all(:,:,k) = 1/max(max(dist_all(:,:,k)))*dist_all(:,:,k);
+        dist_all(k,1) = {dist_curr};
+        diag_all(k,1) = {diag_curr};
+        combined_metric(k,1) = {combined_curr};
     end
 
     %actual clustering
-    clusters = cell(size(segIndex,1),1);
-    thres = zeros(num_var,1);
-    alreadyClustered = zeros(size(segIndex,1),2);
-    for i = 1:floor(0.5*size(segIndex,1))
-        for k = 1:num_var
-            thres(k,1) = facThres*min(combined_metric(i,(i+1):end,k));
-            if(thres(k,1) < thresClusterMin)
-                thres(k,1) = thresClusterMin;
-            elseif(thres(k,1) > thresClusterMax)
-                thres(k,1) = thresClusterMax;
-            end
-        end
-        for j = i:size(segIndex,1)
-            [clusters,alreadyClustered] = FnDecideSimilar(i,j,clusters,alreadyClustered, combined_metric, thres);
-        end
+    for i=1:length(trace)
+        trace(i).labels_trace_per_var = cell(num_var,1);
     end
-    for j = (floor(0.5*size(segIndex,1))+1):size(segIndex,1)
-        for k = 1:num_var
-            thres(k,1) = facThres*min(combined_metric(1:(j-1),j,k));
-            if(thres(k,1) < thresClusterMin)
-                thres(k,1) = thresClusterMin;
-            elseif(thres(k,1) > thresClusterMax)
-                thres(k,1) = thresClusterMax;
+    cluster_segs = cell(num_var,1);
+    for k = 1:num_var
+        segIndex_curr = cell2mat(segIndex_var(k,1));
+        clusters = cell(size(segIndex_curr,1),1);
+        alreadyClustered = zeros(size(segIndex_curr,1),2);
+        for i = 1:size(segIndex_curr,1)
+            thres = facThres*min(combined_metric{k,1}(i,union(1:(i-1),(i+1):end)));
+            if(thres < thresClusterMin)
+                thres = thresClusterMin;
+            elseif(thres > thresClusterMax)
+                thres = thresClusterMax;
+            end
+            for j = i:size(segIndex_curr,1) %Possibly 1 instaed of 1
+                [clusters,alreadyClustered] = FnDecideSimilar(i,j,clusters,alreadyClustered, cell2mat(combined_metric(k)), thres);
             end
         end
-        for i = 1:j
-            [clusters,alreadyClustered] = FnDecideSimilar(i,j,clusters,alreadyClustered, combined_metric, thres);
+
+        %assign local cluster IDs for each output variable
+
+        cluster_curr = zeros(size(segIndex_curr,1),1);
+        for i = 1:size(segIndex_curr,1)
+            cluster = cell2mat(clusters(i));
+            for j =1:size(cluster,2)
+                cluster_curr(cluster(j)) = i;
+            end
+        end
+        cluster_segs(k,1) = {cluster_curr};
+
+        for i=1:length(trace)
+            chpoints_var = cell2mat(trace(i).chpoints_per_var(k,1));
+            len_segs = length(chpoints_var)-1;
+            %add computed labels into trace datastructure
+            trace(i).labels_trace_per_var(k,1) = {cluster_curr(1:len_segs,1)};
+            cluster_curr(1:len_segs,:) = [];
         end
     end
 
-    cluster_segs = zeros(size(segIndex,1),1);
-    for i = 1:size(segIndex,1)
-        cluster = cell2mat(clusters(i));
-        for j =1:size(cluster,2)
-            cluster_segs(cluster(j)) = i;
+    %merge local clusters to global clusters
+
+    indices = ones(num_var,1);
+    nextid = 1;
+    cluster_global = zeros(size(segIndex,1),1);
+    M = containers.Map('KeyType','char','ValueType','double');
+    for i=1:size(segIndex,1)
+        key = '';
+        for k = 1:num_var
+            if(k ~= 1)
+                key = [key '-'];
+            end
+            cluster_curr = cell2mat(cluster_segs(k,1));
+            key = [key num2str(cluster_curr(indices(k,1),1))];
+            seg_curr = cell2mat(segIndex_var(k,1));
+            if(segIndex(i,2) == seg_curr(indices(k,1),2))
+                indices(k,1) = indices(k,1) + 1;
+            end
         end
+        if(isKey(M,key) == 0)
+            M(key) = nextid;
+            nextid = nextid + 1;
+        end
+        cluster_global(i,1) = M(key);
     end
-    
-    labels_num = unique(cluster_segs(:,1));
-    
+
+    labels_num = unique(cluster_global(:,1));
+
     for i=1:length(trace)
-        chpoints = trace(i).chpoints;
+        chpoints = (trace(i).chpoints);
         len_segs = length(chpoints)-1;
         trace(i).labels_num = labels_num;
         %add computed labels into trace datastructure
-        trace(i).labels_trace = cluster_segs(1:len_segs,1);
-        cluster_segs(1:len_segs,:) = [];
+        trace(i).labels_trace = cluster_global(1:len_segs,1);
+        cluster_global(1:len_segs,:) = [];
     end
 end
 
 function [clusters,alreadyClustered] = FnDecideSimilar(i,j,clusters,alreadyClustered, combined_metric, thres)
-    global num_var
     similar = true;
     sum_metric = 0;
-    for k = 1:num_var
-        if(combined_metric(i,j,k) > thres(k,1))
-            similar = false;
-        end
-        sum_metric = sum_metric + combined_metric(i,j,k);
+    if(combined_metric(i,j) > thres)
+        similar = false;
     end
+    sum_metric = sum_metric + combined_metric(i,j); %relict from global approach
     if(similar && (alreadyClustered(j,1) == 0 || alreadyClustered(j,2) > sum_metric))
         if(alreadyClustered(j,1) ~= 0)
             clusters(alreadyClustered(j,1)) = {setdiff(cell2mat(clusters(alreadyClustered(j,1))),j)};
