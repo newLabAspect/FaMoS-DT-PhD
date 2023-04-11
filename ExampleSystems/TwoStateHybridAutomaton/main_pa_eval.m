@@ -6,7 +6,7 @@ addpath(['ExampleSystems', filesep, 'TwoStateHybridAutomaton']);
 addpath(['ProposedAlgorithm', filesep, 'src']);
 global sigma num_var num_ud winlen Ts Time windowSize fixedIntervalLength max_deriv thresClusterMin thresClusterMax offsetCluster facThres precisionDTL useTime
 Ts = 0.01; Time = false; %general paras
-sigma = 0.01;  winlen=5; thresClusterMin = 0; thresClusterMax = 0.04; offsetCluster = 1; facThres = 2.5; %used in clustering
+sigma = 0.000005;  winlen=5; thresClusterMin = 0; thresClusterMax = 0.04; offsetCluster = 1; facThres = 2.5; %used in clustering
 Nsteps = 1; rangePrecision = 0.0001; %linspace(0.01,0.0001,500); %used in eval
 windowSize = 10; %used in changepoint detection
 fixedIntervalLength = 1; precisionDTL = 0.001; useTime = true; %used for DTL
