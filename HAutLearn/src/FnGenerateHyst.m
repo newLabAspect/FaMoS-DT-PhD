@@ -156,7 +156,7 @@ end
 config.settings.plotVariableNames = jsa;
 config.settings.spaceExConfig = configValues;
 printer = com.verivital.hyst.printers.SpaceExPrinter;
-printer.setBaseName(file_name);
+printer.setBaseName(replace(file_name,'\','/'));
 printer.setConfig(config);
 printer.setBaseComponent(ha);
 config.DO_VALIDATION = false;

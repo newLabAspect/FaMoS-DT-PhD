@@ -4,9 +4,9 @@ clear
 
 addpath(['ExampleSystems', filesep, 'TwoStateHybridAutomaton']);
 addpath(['ProposedAlgorithm', filesep, 'src']);
-global sigma num_var num_ud winlen Ts Time windowSize fixedIntervalLength max_deriv thresClusterMin thresClusterMax offsetCluster facThres precisionDTL useTime
+global sigma num_var num_ud winlen Ts Time windowSize fixedIntervalLength max_deriv thresClusterMin thresClusterMax offsetCluster facThres precisionDTL useTime useLMIrefine
 Ts = 0.01; Time = false; %general paras
-sigma = 0.000005;  winlen=5; thresClusterMin = 0; thresClusterMax = 0.04; offsetCluster = 1; facThres = 2.5; %used in clustering
+sigma = 0.000005;  winlen=5; thresClusterMin = 0; thresClusterMax = 0.04; offsetCluster = 1; facThres = 2.5; useLMIrefine = 1; %used in clustering
 Nsteps = 1; rangePrecision = 0.0001; %linspace(0.01,0.0001,500); %used in eval
 windowSize = 10; %used in changepoint detection
 fixedIntervalLength = 1; precisionDTL = 0.001; useTime = true; %used for DTL
@@ -56,20 +56,6 @@ trace = FnClusterSegs(trace, x, ud);
 num_var = num_var / (1 + 0);
 
 t1 = toc;
-
-%% Manual fixup (in future done by LMI)
-
-for i = 1:10
-    for j = 1:length(trace(i).labels_trace)
-        if(trace(i).labels_trace(j) == 7)
-            trace(i).labels_trace(j) = 1;
-        elseif(trace(i).labels_trace(j) == 13)
-            trace(i).labels_trace(j) = 1;
-        elseif(trace(i).labels_trace(j) == 26)
-            trace(i).labels_trace(j) = 1;
-        end
-    end
-end
 
 %% Eval
 

@@ -1,5 +1,5 @@
 function trace = FnClusterSegs(trace, x, ud)
-    global winlen thresClusterMax thresClusterMin num_var offsetCluster facThres;
+    global winlen thresClusterMax thresClusterMin num_var offsetCluster facThres useLMIrefine windowSize;
 
     segIndex = [0,0];
     segIndex_var = cell(num_var,1);
@@ -171,23 +171,40 @@ function trace = FnClusterSegs(trace, x, ud)
     end
 
     %Use LMI to possibly merge incorrectly split-up clusters
-    labels_num = unique(cluster_global(:,1));
-    for i=labels_num'
-        posi = find(cluster_global == i,1); %make selection more advanced
-        start_i = segIndex(posi,1)+winlen;
-        end_i = segIndex(posi,2)-winlen;
-        seg_i = x(start_i:end_i,1:num_var+offsetCluster*num_var); %maybe seperate var
-        for j=setdiff(labels_num',labels_num(1:i)')
-            disp([int2str((i-1)*length(labels_num)+j),'/', int2str(length(labels_num)^2/2)])
-            posj = find(cluster_global == j,1); %make selection more advanced
-            start_j = segIndex(posj,1)+winlen;
-            end_j = segIndex(posj,2)-winlen;
-            seg_j = x(start_j:end_j,1:num_var*(offsetCluster+1)); %maybe seperate var
-            %CONTINUE HERE: WHY ARE SOMETIMES EMPTY SEGs HANDED OVER?
-            res = FnDecideSimilarLMI(seg_i',[],seg_j',[]);
-            if(res)
-                posk = find(cluster_global == j);
-                cluster_global(posk,1) = i;
+    if (useLMIrefine)
+        labels_num = unique(cluster_global(:,1));
+        progress_cnt = 1;
+        for i=labels_num'
+            posi = find(cluster_global == i,1); %make selection more advanced
+            if(isempty(posi))
+                continue;
+            end
+            start_i = segIndex(posi,1)+winlen;
+            end_i = segIndex(posi,2)-winlen;
+            %global clustering only possible if segment long enough, tune fac
+            if(end_i-start_i-1 < 3 * windowSize)
+                continue;
+            end
+            seg_i = x(start_i:end_i,1:num_var+offsetCluster*num_var); %maybe seperate var
+            for j=setdiff(labels_num',labels_num(1:i)')
+                disp([int2str(progress_cnt),'/', int2str((length(labels_num)^2-length(labels_num))/2)])
+                progress_cnt = progress_cnt + 1;
+                posj = find(cluster_global == j,1); %make selection more advanced
+                if(isempty(posj))
+                    continue;
+                end
+                start_j = segIndex(posj,1)+winlen;
+                end_j = segIndex(posj,2)-winlen;
+                %global clustering only possible if segment long enough, tune fac
+                if(end_j-start_j-1 < 3 * windowSize)
+                    continue;
+                end
+                seg_j = x(start_j:end_j,1:num_var*(offsetCluster+1)); %maybe seperate var
+                res = FnDecideSimilarLMI(seg_i',[],seg_j',[]);
+                if(res)
+                    posk = find(cluster_global == j);
+                    cluster_global(posk,1) = i;
+                end
             end
         end
     end
@@ -233,16 +250,6 @@ end
 function result = FnDecideSimilarLMI(xseg1,udseg1,xsegj,udsegj)  
     global sigma winlen;
        
-    %setup
-    xc = [];
-    udc = [];
-    chpc = 1;
-    indx = 1;
-    unindx = [];
-    
-    %calc number of segments
-    num_segments = 2;
-    
     %variable number
     num_var = size(xseg1,1);
     %size of ud
@@ -282,49 +289,44 @@ function result = FnDecideSimilarLMI(xseg1,udseg1,xsegj,udsegj)
     end
     lmi = getlmis; 
     
-    %try to find similiar segments by comparing to all other not yet matched segments    
-    for j = 2:2
-        %disp([int2str(j),'/', int2str(num_segments)])
-        %extract j'th segment, xkj eq. to xk1, udj eq. ud1, xkij eq.
-        %xki1, Okj eq. Ok and Okij eq. Oki
+    %xkj eq. to xk1, udj eq. ud1, xkij eq. xki1, Okj eq. Ok and Okij eq. Oki
         
-        xkj = xsegj(:,1:end - winlen);
-        xkij = [];
-        xkij = xsegj(:, winlen+1:end);
-        
-        if num_ud == 0
-            udj = ones(1,size(xkj,2));
-        else
-            udj = udsegj(:,1:end - winlen);
-            udj = [udj; ones(1,size(xkj,2))];
-        end
+    xkj = xsegj(:,1:end - winlen);
+    xkij = [];
+    xkij = xsegj(:, winlen+1:end);
+    
+    if num_ud == 0
+        udj = ones(1,size(xkj,2));
+    else
+        udj = udsegj(:,1:end - winlen);
+        udj = [udj; ones(1,size(xkj,2))];
+    end
 
-        Okj = [xkj; udj];
-        Okij = xkij;
-        
-        %append to already existing LMI
-        setlmis(lmi);
-        error_tj = (sigma * size(Okj,2))^2;
-        for i = 1:num_var
-            n = (i+(j-1)*num_var);
-            lmiterm([-n, 1,1,0],1);
-            lmiterm([-n, 2,1,V{i}],1,Okj)
-            lmiterm([-n, 2,1,0],-Okij(i,:))
-            lmiterm([-n, 2,2,0], error_tj)
-        end
-        lmi = getlmis; 
-        newlmi = lmi;  
-        %solve LMI
-        [tmin,xfeas] = feasp(newlmi);
-        %v = dec2mat(Ilmi,xfeas,V);
-        %1 and j are similar
-        if (tmin <=0)     
-            result = true;
-            return
-        %1 and j are not similar
-        else
-            result = false;
-            return
-        end
+    Okj = [xkj; udj];
+    Okij = xkij;
+    
+    %append to already existing LMI
+    setlmis(lmi);
+    error_tj = (sigma * size(Okj,2))^2;
+    for i = 1:num_var
+        n = (i+(2-1)*num_var);
+        lmiterm([-n, 1,1,0],1);
+        lmiterm([-n, 2,1,V{i}],1,Okj)
+        lmiterm([-n, 2,1,0],-Okij(i,:))
+        lmiterm([-n, 2,2,0], error_tj)
+    end
+    lmi = getlmis; 
+    newlmi = lmi;  
+    %solve LMI
+    [tmin,xfeas] = feasp(newlmi);
+    %v = dec2mat(Ilmi,xfeas,V);
+    %1 and j are similar
+    if (tmin <=0)     
+        result = true;
+        return
+    %1 and j are not similar
+    else
+        result = false;
+        return
     end
 end

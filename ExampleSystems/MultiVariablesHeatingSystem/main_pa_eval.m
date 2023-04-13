@@ -4,9 +4,9 @@ clear
 
 addpath(['ExampleSystems', filesep, 'MultiVariablesHeatingSystem']);
 addpath(['ProposedAlgorithm', filesep, 'src']);
-global sigma num_var num_ud winlen Ts Time windowSize fixedIntervalLength max_deriv thresClusterMax thresClusterMin offsetCluster facThres precisionDTL useTime
+global sigma num_var num_ud winlen Ts Time windowSize fixedIntervalLength max_deriv thresClusterMax thresClusterMin offsetCluster facThres precisionDTL useTime useLMIrefine
 Ts = 0.01; Time = false; %general paras
-sigma = 0.01;  winlen=5; thresClusterMax = 1; thresClusterMin = 0.01; offsetCluster = 0; facThres = 2.5; %used in clustering
+sigma = 0.000005;  winlen=5; thresClusterMax = 1; thresClusterMin = 0.01; offsetCluster = 0; facThres = 2.5; useLMIrefine = 1; %used in clustering
 Nsteps = 1; rangePrecision = 0.0001; %linspace(0.01,0.0001,500); %used in eval
 windowSize = 10; %used in changepoint detection
 fixedIntervalLength = 1; precisionDTL = 0.001; useTime = true; %used for DTL
