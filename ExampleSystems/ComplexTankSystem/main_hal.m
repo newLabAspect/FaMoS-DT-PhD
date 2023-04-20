@@ -2,17 +2,17 @@
 clc
 clear
 
-addpath(['ExampleSystems', filesep, 'MultiVariablesHeatingSystem']);
+addpath(['ExampleSystems', filesep, 'ComplexTankSystem']);
 addpath(['HAutLearn', filesep, 'src']);
 global sigma num_var num_ud winlen Ts Time
 Ts = 0.01; Time = false;
-sigma = 0.00005;  winlen=5;
-num_var = 2; num_ud = 0;
+sigma = 0.000005;  winlen=5;
+num_var = 3; num_ud = 0;
 num = 1; x = []; ud = [];
 
 %% Changepoint determination and trace setup
 tic
-for i = 1:3
+for i = 1:10
     load(['training', int2str(i),'.mat']);
     trace_temp = FnProcessNoiseData(xout, num_var);
     trace(num) = trace_temp;
@@ -53,9 +53,9 @@ t4 = toc;
 
 %% Generate Final Automaton model
 
-FnGenerateHyst(['ExampleSystems', filesep, 'MultiVariablesHeatingSystem', filesep, 'automata_learning'],label_guard, num_var, ode, pta_trace);
+FnGenerateHyst(['ExampleSystems', filesep, 'ComplexTankSystem', filesep, 'automata_learning'],label_guard, num_var, ode, pta_trace);
 
-xmlstruct = readstruct(['ExampleSystems', filesep, 'MultiVariablesHeatingSystem', filesep, 'automata_learning.xml']);
+xmlstruct = readstruct(['ExampleSystems', filesep, 'ComplexTankSystem', filesep, 'automata_learning.xml']);
 
 %compute relation between clustering ids and location ids
 locations = xmlstruct.component(1).location;

@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<sspaceex xmlns="http://www-verimag.imag.fr/xml-namespaces/sspaceex" math="SpaceEx" version="0.2">
+   <component id="ExampleSystems/ComplexTankSystem/automata_learning_sys">
+      <param controlled="true" d1="1" d2="1" dynamics="any" local="false" name="x1" type="real"/>
+      <param controlled="true" d1="1" d2="1" dynamics="any" local="false" name="x2" type="real"/>
+      <param controlled="true" d1="1" d2="1" dynamics="any" local="false" name="x3" type="real"/>
+      <location id="1" name="loc1">
+         <flow>x1' == 0.00000000000000299 * x3 - 0.00000000000001015 * x2 - 0.08003 * x1 + 0.00000000000001964 &amp;
+ x2' == 0.002911 * x1 - 0.06696 * x2 + 0.0006542 * x3 - 0.004554 &amp;
+ x3' == 0.00000000000003622 - 0.00000000000001228 * x2 - 0.05001 * x3 - 0.000000000000007552 * x1</flow>
+      </location>
+      <location id="2" name="loc2">
+         <flow>x1' == 0.4451 - 0.01989 * x2 - 0.009237 * x3 - 0.02472 * x1 &amp;
+ x2' == 0.000000000000001003 * x3 - 0.07002 * x2 + 0.00000000000001152 &amp;
+ x3' == -0.000000000000006128 * x2 - 0.05001 * x3 - 0.00000000000002925</flow>
+      </location>
+      <location id="3" name="loc3">
+         <flow>x1' == 0.00000000000000299 * x3 - 0.00000000000001015 * x2 - 0.08003 * x1 + 0.00000000000001964 &amp;
+ x2' == 0.002911 * x1 - 0.06696 * x2 + 0.0006542 * x3 - 0.004554 &amp;
+ x3' == 0.00000000000003622 - 0.00000000000001228 * x2 - 0.05001 * x3 - 0.000000000000007552 * x1</flow>
+      </location>
+      <location id="4" name="loc4">
+         <flow>x1' == 0.000000000000006576 * x2 - 0.08003 * x1 - 0.000000000000004533 * x3 - 0.00000000000004707 &amp;
+ x2' == 0.002614 * x3 - 0.05061 * x2 - 0.007137 * x1 + 0.3895 &amp;
+ x3' == 0.00000000000001069 * x2 - 0.00000000000001181 * x1 - 0.05001 * x3 - 0.000000000000005146</flow>
+      </location>
+      <location id="5" name="loc5">
+         <flow>x1' == 0.06054 * x2 - 0.07005 * x1 + 0.006062 * x3 - 0.05155 &amp;
+ x2' == 0.002325 * x1 - 0.07944 * x2 + 0.01006 * x3 - 0.001109 &amp;
+ x3' == 0.03683 * x2 - 0.02517 * x1 + 0.02525 * x3 + 0.2647</flow>
+      </location>
+      <location id="6" name="loc6">
+         <flow>x1' == 0.00000000000000299 * x3 - 0.00000000000001015 * x2 - 0.08003 * x1 + 0.00000000000001964 &amp;
+ x2' == 0.002911 * x1 - 0.06696 * x2 + 0.0006542 * x3 - 0.004554 &amp;
+ x3' == 0.00000000000003622 - 0.00000000000001228 * x2 - 0.05001 * x3 - 0.000000000000007552 * x1</flow>
+      </location>
+      <location id="7" name="loc7">
+         <flow>x1' == 0.00000000000000299 * x3 - 0.00000000000001015 * x2 - 0.08003 * x1 + 0.00000000000001964 &amp;
+ x2' == 0.002911 * x1 - 0.06696 * x2 + 0.0006542 * x3 - 0.004554 &amp;
+ x3' == 0.00000000000003622 - 0.00000000000001228 * x2 - 0.05001 * x3 - 0.000000000000007552 * x1</flow>
+      </location>
+      <transition asap="false" bezier="false" source="1" target="2" timedriven="false">
+         <guard>0.001704 * x2 - 1.568 * x1 - 0.0008483 * x3 + 1.0 &gt; 0.0</guard>
+         <labelposition/>
+         <middlepoint/>
+      </transition>
+      <transition asap="false" bezier="false" source="2" target="3" timedriven="false">
+         <guard>-1.159 * x1 - 0.007756 * x2 - 0.007662 * x3 + 1.0 &lt; 0.0</guard>
+         <labelposition/>
+         <middlepoint/>
+      </transition>
+      <transition asap="false" bezier="false" source="3" target="4" timedriven="false">
+         <guard>0.0008079 * x3 - 1.667 * x2 - 0.0005141 * x1 + 1.0 &gt; 0.0</guard>
+         <labelposition/>
+         <middlepoint/>
+      </transition>
+      <transition asap="false" bezier="false" source="4" target="3" timedriven="false">
+         <guard>0.002552 * x1 - 1.248 * x2 - 0.001274 * x3 + 1.0 &lt; 0.0</guard>
+         <labelposition/>
+         <middlepoint/>
+      </transition>
+      <transition asap="false" bezier="false" source="3" target="2" timedriven="false">
+         <guard>0.001704 * x2 - 1.568 * x1 - 0.0008483 * x3 + 1.0 &gt; 0.0</guard>
+         <labelposition/>
+         <middlepoint/>
+      </transition>
+      <transition asap="false" bezier="false" source="5" target="3" timedriven="false">
+         <guard>0.0002276 * x1 + 0.0006757 * x2 - 1.399 * x3 + 1.0 &lt; 0.0</guard>
+         <labelposition/>
+         <middlepoint/>
+      </transition>
+      <transition asap="false" bezier="false" source="3" target="5" timedriven="false">
+         <guard>-0.000688 * x1 - 0.0002388 * x2 - 1.866 * x3 + 1.0 &gt; 0.0</guard>
+         <labelposition/>
+         <middlepoint/>
+      </transition>
+      <transition asap="false" bezier="false" source="1" target="6" timedriven="false">
+         <guard>0.0002276 * x1 + 0.0006757 * x2 - 1.399 * x3 + 1.0 &lt; 0.0</guard>
+         <labelposition/>
+         <middlepoint/>
+      </transition>
+      <transition asap="false" bezier="false" source="6" target="4" timedriven="false">
+         <guard>0.0008079 * x3 - 1.667 * x2 - 0.0005141 * x1 + 1.0 &gt; 0.0</guard>
+         <labelposition/>
+         <middlepoint/>
+      </transition>
+      <transition asap="false" bezier="false" source="1" target="7" timedriven="false">
+         <guard>0.002552 * x1 - 1.248 * x2 - 0.001274 * x3 + 1.0 &lt; 0.0</guard>
+         <labelposition/>
+         <middlepoint/>
+      </transition>
+      <transition asap="false" bezier="false" source="7" target="2" timedriven="false">
+         <guard>0.001704 * x2 - 1.568 * x1 - 0.0008483 * x3 + 1.0 &gt; 0.0</guard>
+         <labelposition/>
+         <middlepoint/>
+      </transition>
+   </component>
+   <component id="ExampleSystems/ComplexTankSystem/automata_learning_net">
+      <param controlled="true" d1="1" d2="1" dynamics="any" local="false" name="x1" type="real"/>
+      <param controlled="true" d1="1" d2="1" dynamics="any" local="false" name="x2" type="real"/>
+      <param controlled="true" d1="1" d2="1" dynamics="any" local="false" name="x3" type="real"/>
+      <bind as="ExampleSystems/ComplexTankSystem/automata_learning" component="ExampleSystems/ComplexTankSystem/automata_learning_sys">
+         <map key="x1">x1</map>
+         <map key="x2">x2</map>
+         <map key="x3">x3</map>
+      </bind>
+   </component>
+</sspaceex>

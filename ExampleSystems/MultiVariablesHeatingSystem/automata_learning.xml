@@ -4,155 +4,29 @@
       <param controlled="true" d1="1" d2="1" dynamics="any" local="false" name="x1" type="real"/>
       <param controlled="true" d1="1" d2="1" dynamics="any" local="false" name="x2" type="real"/>
       <location id="1" name="loc1">
-         <flow>x1' == 0.4835 * x1 + 0.03326 * x2 + 0.008445 &amp;
- x2' == 0.3214 * x2 - 0.009932 * x1 - 0.007555</flow>
+         <flow>x1' == 0.4988 * x1 - 0.00000000000001076 * x2 + 0.01985 &amp;
+ x2' == 0.2996 * x2 - 0.00000000000004749</flow>
       </location>
       <location id="2" name="loc2">
-         <flow>x1' == 0.1091 * x1 - 0.02402 * x2 - 0.505 &amp;
- x2' == 0.2996 * x2 + 0.00000000000006981</flow>
+         <flow>x1' == 0.1076 * x1 - 0.03195 * x2 - 0.4964 &amp;
+ x2' == 0.2996 * x2 - 0.00000000000002606</flow>
       </location>
       <location id="3" name="loc3">
-         <flow>x1' == 0.0000000000001063 * x2 - 0.5013 * x1 - 0.00000000000005623 &amp;
- x2' == 0.09486 * x1 - 0.4792 * x2 - 0.06689</flow>
-      </location>
-      <location id="4" name="loc4">
-         <flow>x1' == 0.1091 * x1 - 0.02402 * x2 - 0.505 &amp;
- x2' == 0.2996 * x2 + 0.00000000000006981</flow>
-      </location>
-      <location id="5" name="loc5">
-         <flow>x1' == 0.4835 * x1 + 0.03326 * x2 + 0.008445 &amp;
- x2' == 0.3214 * x2 - 0.009932 * x1 - 0.007555</flow>
-      </location>
-      <location id="6" name="loc6">
-         <flow>x1' == 0.0000000000001063 * x2 - 0.5013 * x1 - 0.00000000000005623 &amp;
- x2' == 0.09486 * x1 - 0.4792 * x2 - 0.06689</flow>
-      </location>
-      <location id="7" name="loc7">
-         <flow>x1' == 0.4835 * x1 + 0.03326 * x2 + 0.008445 &amp;
- x2' == 0.3214 * x2 - 0.009932 * x1 - 0.007555</flow>
-      </location>
-      <location id="8" name="loc8">
-         <flow>x1' == 0.1091 * x1 - 0.02402 * x2 - 0.505 &amp;
- x2' == 0.2996 * x2 + 0.00000000000006981</flow>
-      </location>
-      <location id="9" name="loc9">
-         <flow>x1' == 0.0000000000001063 * x2 - 0.5013 * x1 - 0.00000000000005623 &amp;
- x2' == 0.09486 * x1 - 0.4792 * x2 - 0.06689</flow>
-      </location>
-      <location id="10" name="loc10">
-         <flow>x1' == 0.4835 * x1 + 0.03326 * x2 + 0.008445 &amp;
- x2' == 0.3214 * x2 - 0.009932 * x1 - 0.007555</flow>
-      </location>
-      <location id="11" name="loc11">
-         <flow>x1' == 0.1091 * x1 - 0.02402 * x2 - 0.505 &amp;
- x2' == 0.2996 * x2 + 0.00000000000006981</flow>
-      </location>
-      <location id="12" name="loc12">
-         <flow>x1' == 0.0000000000001063 * x2 - 0.5013 * x1 - 0.00000000000005623 &amp;
- x2' == 0.09486 * x1 - 0.4792 * x2 - 0.06689</flow>
+         <flow>x1' == 0.00000000000003081 - 0.00000000000004347 * x2 - 0.5013 * x1 &amp;
+ x2' == 0.1144 * x1 - 0.4974 * x2 - 0.06565</flow>
       </location>
       <transition asap="false" bezier="false" source="1" target="2" timedriven="false">
-         <guard>0.004763 * x2 - 1.012 * x1 + 1.0 &lt; 0.0</guard>
+         <guard>-1.005 * x1 - 0.004442 * x2 + 1.0 &lt; 0.0</guard>
          <labelposition/>
          <middlepoint/>
       </transition>
       <transition asap="false" bezier="false" source="2" target="3" timedriven="false">
-         <guard>-1.251 * x1 - 0.001739 * x2 + 1.0 &gt; 0.0</guard>
+         <guard>0.0008911 * x2 - 1.254 * x1 + 1.0 &gt; 0.0</guard>
          <labelposition/>
          <middlepoint/>
       </transition>
       <transition asap="false" bezier="false" source="3" target="1" timedriven="false">
-         <guard>0.02124 * x1 - 1.95 * x2 + 1.0 &gt; 0.0</guard>
-         <labelposition/>
-         <middlepoint/>
-      </transition>
-      <transition asap="false" bezier="false" source="1" target="4" timedriven="false">
-         <guard>0.004763 * x2 - 1.012 * x1 + 1.0 &lt; 0.0</guard>
-         <labelposition/>
-         <middlepoint/>
-      </transition>
-      <transition asap="false" bezier="false" source="4" target="3" timedriven="false">
-         <guard>-1.251 * x1 - 0.001739 * x2 + 1.0 &gt; 0.0</guard>
-         <labelposition/>
-         <middlepoint/>
-      </transition>
-      <transition asap="false" bezier="false" source="3" target="5" timedriven="false">
-         <guard>0.02124 * x1 - 1.95 * x2 + 1.0 &gt; 0.0</guard>
-         <labelposition/>
-         <middlepoint/>
-      </transition>
-      <transition asap="false" bezier="false" source="5" target="2" timedriven="false">
-         <guard>0.004763 * x2 - 1.012 * x1 + 1.0 &lt; 0.0</guard>
-         <labelposition/>
-         <middlepoint/>
-      </transition>
-      <transition asap="false" bezier="false" source="1" target="6" timedriven="false">
-         <guard>-1.251 * x1 - 0.001739 * x2 + 1.0 &gt; 0.0</guard>
-         <labelposition/>
-         <middlepoint/>
-      </transition>
-      <transition asap="false" bezier="false" source="6" target="5" timedriven="false">
-         <guard>0.02124 * x1 - 1.95 * x2 + 1.0 &gt; 0.0</guard>
-         <labelposition/>
-         <middlepoint/>
-      </transition>
-      <transition asap="false" bezier="false" source="1" target="7" timedriven="false">
-         <guard>0.02124 * x1 - 1.95 * x2 + 1.0 &gt; 0.0</guard>
-         <labelposition/>
-         <middlepoint/>
-      </transition>
-      <transition asap="false" bezier="false" source="7" target="2" timedriven="false">
-         <guard>0.004763 * x2 - 1.012 * x1 + 1.0 &lt; 0.0</guard>
-         <labelposition/>
-         <middlepoint/>
-      </transition>
-      <transition asap="false" bezier="false" source="1" target="8" timedriven="false">
-         <guard>0.004763 * x2 - 1.012 * x1 + 1.0 &lt; 0.0</guard>
-         <labelposition/>
-         <middlepoint/>
-      </transition>
-      <transition asap="false" bezier="false" source="8" target="3" timedriven="false">
-         <guard>-1.251 * x1 - 0.001739 * x2 + 1.0 &gt; 0.0</guard>
-         <labelposition/>
-         <middlepoint/>
-      </transition>
-      <transition asap="false" bezier="false" source="1" target="9" timedriven="false">
-         <guard>-1.251 * x1 - 0.001739 * x2 + 1.0 &gt; 0.0</guard>
-         <labelposition/>
-         <middlepoint/>
-      </transition>
-      <transition asap="false" bezier="false" source="9" target="5" timedriven="false">
-         <guard>0.02124 * x1 - 1.95 * x2 + 1.0 &gt; 0.0</guard>
-         <labelposition/>
-         <middlepoint/>
-      </transition>
-      <transition asap="false" bezier="false" source="1" target="10" timedriven="false">
-         <guard>0.02124 * x1 - 1.95 * x2 + 1.0 &gt; 0.0</guard>
-         <labelposition/>
-         <middlepoint/>
-      </transition>
-      <transition asap="false" bezier="false" source="10" target="2" timedriven="false">
-         <guard>0.004763 * x2 - 1.012 * x1 + 1.0 &lt; 0.0</guard>
-         <labelposition/>
-         <middlepoint/>
-      </transition>
-      <transition asap="false" bezier="false" source="1" target="11" timedriven="false">
-         <guard>0.004763 * x2 - 1.012 * x1 + 1.0 &lt; 0.0</guard>
-         <labelposition/>
-         <middlepoint/>
-      </transition>
-      <transition asap="false" bezier="false" source="11" target="3" timedriven="false">
-         <guard>-1.251 * x1 - 0.001739 * x2 + 1.0 &gt; 0.0</guard>
-         <labelposition/>
-         <middlepoint/>
-      </transition>
-      <transition asap="false" bezier="false" source="1" target="12" timedriven="false">
-         <guard>-1.251 * x1 - 0.001739 * x2 + 1.0 &gt; 0.0</guard>
-         <labelposition/>
-         <middlepoint/>
-      </transition>
-      <transition asap="false" bezier="false" source="12" target="5" timedriven="false">
-         <guard>0.02124 * x1 - 1.95 * x2 + 1.0 &gt; 0.0</guard>
+         <guard>-0.006614 * x1 - 1.925 * x2 + 1.0 &gt; 0.0</guard>
          <labelposition/>
          <middlepoint/>
       </transition>

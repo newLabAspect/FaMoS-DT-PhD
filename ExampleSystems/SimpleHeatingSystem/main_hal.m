@@ -2,12 +2,12 @@
 clc
 clear
 
-addpath(['ExampleSystems', filesep, 'MultiVariablesHeatingSystem']);
+addpath(['ExampleSystems', filesep, 'SimpleHeatingSystem']);
 addpath(['HAutLearn', filesep, 'src']);
 global sigma num_var num_ud winlen Ts Time
 Ts = 0.01; Time = false;
 sigma = 0.00005;  winlen=5;
-num_var = 2; num_ud = 0;
+num_var = 1; num_ud = 0;
 num = 1; x = []; ud = [];
 
 %% Changepoint determination and trace setup
@@ -24,12 +24,12 @@ end
 %% Parameter settings for edge conditioning
 t0 = toc;
 eta = 100000; % number of iterations 
-lambda = 0.1; % tolerance 
+lambda = 1.0; % tolerance 
 gamma = 10; %the least number of inlayers
 
 %% Determine clustered trace segments
 
-%trace = FnClusterSegs(trace, x, ud);
+trace = FnClusterSegs(trace, x, ud);
 
 t1 = toc;
 
@@ -53,9 +53,9 @@ t4 = toc;
 
 %% Generate Final Automaton model
 
-FnGenerateHyst(['ExampleSystems', filesep, 'MultiVariablesHeatingSystem', filesep, 'automata_learning'],label_guard, num_var, ode, pta_trace);
+FnGenerateHyst(['ExampleSystems', filesep, 'SimpleHeatingSystem', filesep, 'automata_learning'],label_guard, num_var, ode, pta_trace);
 
-xmlstruct = readstruct(['ExampleSystems', filesep, 'MultiVariablesHeatingSystem', filesep, 'automata_learning.xml']);
+xmlstruct = readstruct(['ExampleSystems', filesep, 'SimpleHeatingSystem', filesep, 'automata_learning.xml']);
 
 %compute relation between clustering ids and location ids
 locations = xmlstruct.component(1).location;
