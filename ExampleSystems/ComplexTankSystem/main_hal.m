@@ -10,9 +10,11 @@ sigma = 0.000005;  winlen=5;
 num_var = 3; num_ud = 0;
 num = 1; x = []; ud = [];
 
+allData = 1:10;
+evalData = [2,6];
 %% Changepoint determination and trace setup
 tic
-for i = 1:10
+for i = allData
     load(['training', int2str(i),'.mat']);
     trace_temp = FnProcessNoiseData(xout, num_var);
     trace(num) = trace_temp;
@@ -39,15 +41,15 @@ for n =1:length(trace)
     trace(n).labels_trace = [trace(n).labels_trace;0];
 end
 
-ode = FnEstODE(trace);
+ode = FnEstODE(trace(setdiff(allData,evalData)));
 t2 = toc;
 
 %% LI Estimation given parameters
-[trace,label_guard] = FnLI(trace, eta, lambda, gamma);
+[trace_train,label_guard] = FnLI(trace(setdiff(allData,evalData)), eta, lambda, gamma);
 t3 = toc;
 
 %% Setup PTA given LIs and ODEs
-pta_trace = FnPTA(trace);
+pta_trace = FnPTA(trace_train);
 pta_trace = pta_filter(pta_trace);
 t4 = toc;
 
@@ -57,81 +59,7 @@ FnGenerateHyst(['ExampleSystems', filesep, 'ComplexTankSystem', filesep, 'automa
 
 xmlstruct = readstruct(['ExampleSystems', filesep, 'ComplexTankSystem', filesep, 'automata_learning.xml']);
 
-%compute relation between clustering ids and location ids
-locations = xmlstruct.component(1).location;
-locToClusterID = containers.Map('KeyType','double','ValueType','double');
-
-for i = 1:length(locations)
-    flow = locations(i).flow;
-    AB = zeros(num_var,num_var+1);
-    lines = split(flow,'&');
-    %create system matrix for currently considered location
-    for j = 1:num_var
-        curr_line = lines(j);
-        curr_line = strrep(curr_line,"+ ","+");
-        curr_line = char(strrep(curr_line,"- ","-"));
-        for k = 1:num_var
-            pos_end = strfind(curr_line,sprintf(" * x%d",k))-1;
-            if(isempty(pos_end))
-                continue
-            end
-            pos_start = strfind(curr_line(1:pos_end)," ");
-            pos_start = pos_start(end);
-            coeff = sscanf(curr_line((pos_start):pos_end),"%f");
-            curr_line((pos_start):(pos_end+5)) = [];
-            AB(j,k) = coeff;
-        end
-        pos_end = length(curr_line);
-        pos_start = strfind(curr_line(1:(pos_end-1))," ");
-        pos_start = pos_start(end);
-        coeff = sscanf(curr_line((pos_start):pos_end),"%f");
-        AB(j,num_var+1) = coeff;
-    end
-    %find corresponding matrix in ode (within tolerance)
-    dev = zeros(1,length(ode));
-    for j = 1:length(ode)
-        dev(1,j) = sum(sum(abs(cell2mat(ode(1,j))-AB))); %maybe other matrix norm
-    end
-    %store in map, key location id (i) and value ode id (j)
-    [mindev,pos_min] = min(dev);
-    locToClusterID(i) = pos_min;
-end
-
-%extract transitions
-transitions = xmlstruct.component(1).transition;
-num = 1;
-conditions = [];
-
-for i = 1:length(xmlstruct.component(1).transition)
-    curr_trans = transitions(i); 
-    condition = zeros(1,num_var+1+2);
-    condition(1,1) = locToClusterID(curr_trans.sourceAttribute); %origin
-    condition(1,2) = locToClusterID(curr_trans.targetAttribute); %destination
-    curr_line = curr_trans.guard;
-    curr_line = strrep(curr_line,"+ ","+");
-    curr_line = char(strrep(curr_line,"- ","-"));
-    curr_line = [' ' curr_line];
-    for k = 1:num_var
-        pos_end = strfind(curr_line,sprintf(" * x%d",k))-1;
-        if(isempty(pos_end))
-            continue
-        end
-        pos_start = strfind(curr_line(1:pos_end)," ");
-        pos_start = pos_start(end);
-        coeff = sscanf(curr_line((pos_start):pos_end),"%f");
-        curr_line((pos_start):(pos_end+5)) = [];
-        condition(1,k+2) = coeff;
-    end
-    if(contains(curr_line,">"))
-        condition(1,2+num_var+1) = +1; %representing +1.0 > 0.0
-    else
-        condition(1,2+num_var+1) = -1; %representing +1.0 < 0.0
-    end
-    conditions = [conditions; condition];
-    num = num + 1;
-end
-
-%maybe remove self transitions created by new mapping?
+[correct,false] = FnEvaluate(trace(evalData),xmlstruct,ode,0.001);
 
 t5 = toc;
 
