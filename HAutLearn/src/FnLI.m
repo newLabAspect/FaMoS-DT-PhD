@@ -8,7 +8,7 @@ trans = [];
 for i = 1:length(trace)
     chpoints = trace(i).chpoints;
     labels_trace = trace(i).labels_trace;
-    x = trace(i).x;
+    x = trace(i).x(:,1:num_var);
 
     for j = 1:(length(labels_trace)-1)  % last chpoints is the end point
 
@@ -172,6 +172,7 @@ function [M, inlayer]= FnInequalitySymbol(indx_ch, wb, inlayer_temp, trace, poin
 end
 
 function seg = FnGetSeg(indx, trace)
+    global num_var
     t = 1;
     seg = [];
     for i = 1:length(trace)
@@ -183,7 +184,7 @@ function seg = FnGetSeg(indx, trace)
 %          end
 
             if t == indx 
-                x_temp = trace(i).x(trace(i).chpoints(j):trace(i).chpoints(j+1),:);
+                x_temp = trace(i).x(trace(i).chpoints(j):trace(i).chpoints(j+1),1:num_var);
                 seg = x_temp;
                 return;
             end

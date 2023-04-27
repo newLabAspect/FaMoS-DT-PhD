@@ -52,7 +52,7 @@ function labels = FnIndxarrange(cluster_idx, index)
 end
 
 function indx = FnRecursive(x,ud,chpoints)  
-    global sigma winlen;
+    global sigma winlen num_var num_ud;
     
     if size(x,1) ~= 0
         
@@ -67,21 +67,16 @@ function indx = FnRecursive(x,ud,chpoints)
             indx = [1;-1];
             return;
         end
-        
-        %variable number
-        num_var = size(x,1);
-        %size of ud
-        num_ud = size(ud,1);
-        
+         
         index_start1 = chpoints(1,1);
         index_end1 = chpoints(1,2);
-        xseg1 = x(:,index_start1: index_end1);
+        xseg1 = x(1:num_var,index_start1: index_end1);
         xk1 = xseg1(:,1:end - winlen); 
         ud1 = [];
         if num_ud ==0
             ud1 = ones(1,size(xk1,2));
         else
-            udseg1 = ud(:,index_start1: index_end1);
+            udseg1 = ud(1:num_ud,index_start1: index_end1);
             ud1 = udseg1(:,1:end - winlen);
             ud1 = [ud1; ones(1,size(xk1,2))];
         end
@@ -112,7 +107,7 @@ function indx = FnRecursive(x,ud,chpoints)
             index_startj = chpoints(j,1);
             index_endj = chpoints(j,2);
                        
-            xsegj = x(:,index_startj: index_endj);
+            xsegj = x(1:num_var,index_startj: index_endj);
             xkj = xsegj(:,1:end - winlen);
             xkij = [];
             xkij = xsegj(:, winlen+1:end);
@@ -120,7 +115,7 @@ function indx = FnRecursive(x,ud,chpoints)
             if num_ud == 0
                 udj = ones(1,size(xkj,2));
             else
-                udsegj = ud(:,index_startj: index_endj);
+                udsegj = ud(1:num_ud,index_startj: index_endj);
                 udj = udsegj(:,1:end - winlen);
                 udj = [udj; ones(1,size(xkj,2))];
             end
