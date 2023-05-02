@@ -8,6 +8,8 @@ for curr = 1:length(states_init)
 i = 1;
 t = 0.0;
 state = states_init(curr,1);
+states = [state];
+chpoints = [i];
 x = x_init(curr, :);
 
 while t < 20.0
@@ -19,10 +21,16 @@ while t < 20.0
         x_ = x(i,1) + x_dot*Ts;
     end
 
+    state_old = state;
     if x_ >= 25 && state == 1
         state = 2;
     elseif x_ <= 20 && state == 2
         state = 1;
+    end
+
+    if(state ~= state_old)
+        states = [states; state];
+        chpoints = [chpoints; i];
     end
 
     x_dot_dot = 0.0;
@@ -32,6 +40,7 @@ while t < 20.0
 end
 
 xout = x(:,1);
-save(['evaluation\SimpleHeatingSystem\training', int2str(curr),'.mat'],'xout');
+chpoints = [chpoints; i];
+save(['ExampleSystems\SimpleHeatingSystem\training', int2str(curr),'.mat'],'xout','states','chpoints');
 
 end

@@ -6,15 +6,14 @@ states_init = [0; 0; 1; 2; 3; 4; 5; 6; 7; 7];
 l_1 = -0.08; l_2 = -0.07; l_3 = -0.05;
 f_1 = 11; f_2 = 10; f_3 = 9;
 t_f = 20; t_h = 15; t_m = 10; t_l = 5;
-states = cell(10,1);
 
 for curr = 1:length(states_init)
 
 i = 1;
 t = 0.0;
 state = states_init(curr,1);
-states(curr) = {state};
-allstates = [state];
+states = [state];
+chpoints = [i];
 x = [x_init(curr, :), 0.0, 0.0, 0.0];
 
 while t < 20.0
@@ -146,9 +145,9 @@ while t < 20.0
     end
 
     if(state ~= state_old)
-        states(curr) = {[cell2mat(states(curr)), state]};
+        states = [states; state];
+        chpoints = [chpoints; i];
     end
-    allstates = [allstates, state];
 
     x = [x; x_1, x_2, x_3, x_dot_1, x_dot_2, x_dot_3];
     i = i +1;
@@ -156,15 +155,16 @@ while t < 20.0
 end
 
 xout = x(:,1:3);
-save(['evaluation\ComplexTankSystem\training', int2str(curr),'.mat'],'xout');
-hold on;
-subplot(4,1,1);
-plot(allstates);
-subplot(4,1,2);
-plot(x(:,1));
-subplot(4,1,3);
-plot(x(:,2));
-subplot(4,1,4);
-plot(x(:,3));
-hold off;
+chpoints = [chpoints; i];
+save(['ExampleSystems\ComplexTankSystem\training', int2str(curr),'.mat'],'xout','states','chpoints');
+% hold on;
+% subplot(4,1,1);
+% plot(allstates);
+% subplot(4,1,2);
+% plot(x(:,1));
+% subplot(4,1,3);
+% plot(x(:,2));
+% subplot(4,1,4);
+% plot(x(:,3));
+% hold off;
 end

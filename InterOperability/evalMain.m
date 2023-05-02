@@ -31,6 +31,8 @@ function [correctAll,falseAll,t_cluster,t_train,trace] = evalMain(allData,evalDa
         %strip info from front bc derivs are not available there
         xout = xout((max_deriv+1):end,:);
         trace_temp = FnDetectChangePoints(xout, num_var);
+        trace_temp.true_states = states;
+        trace_temp.true_chps = chpoints;
         trace(num) = trace_temp;
         %all traces are appended (needed for clustering in that form)
         x = [x; trace(num).x];
@@ -61,6 +63,15 @@ function [correctAll,falseAll,t_cluster,t_train,trace] = evalMain(allData,evalDa
     num_var = num_var / (1 + 0);
     
     t_cluster = toc;
+
+    %Eval clusters
+    ClusterCorrect = 0;
+    ClusterFalse = 0;
+    for i = 1:length(trace)
+        [cTemp, fTemp] = FnEvalCluster(trace(i).labels_trace,trace(i).true_states,trace(i).true_chps);
+        ClusterCorrect = ClusterCorrect + cTemp;
+        ClusterFalse = ClusterFalse + fTemp;
+    end
     
     %% Training and short Eval
     
