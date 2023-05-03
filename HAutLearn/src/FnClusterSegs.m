@@ -52,7 +52,7 @@ function labels = FnIndxarrange(cluster_idx, index)
 end
 
 function indx = FnRecursive(x,ud,chpoints)  
-    global sigma winlen num_var num_ud;
+    global sigma winlen num_var num_ud offsetCluster;
     
     if size(x,1) ~= 0
         
@@ -61,6 +61,9 @@ function indx = FnRecursive(x,ud,chpoints)
         chpc = 1;
         indx = 1;
         unindx = [];
+        %NOTE: change num_var to num_vars and to not change num_var to that
+        %value untested, could have problems!
+        num_vars = num_var * (1 + offsetCluster);
         
         num_segments = size(chpoints,1);
         if num_segments ==1
@@ -70,7 +73,7 @@ function indx = FnRecursive(x,ud,chpoints)
          
         index_start1 = chpoints(1,1);
         index_end1 = chpoints(1,2);
-        xseg1 = x(1:num_var,index_start1: index_end1);
+        xseg1 = x(1:num_vars,index_start1: index_end1);
         xk1 = xseg1(:,1:end - winlen); 
         ud1 = [];
         if num_ud ==0
@@ -86,14 +89,14 @@ function indx = FnRecursive(x,ud,chpoints)
         Oki = xki1;
         
         setlmis([]); % Set a new LMI
-        structV = [1, 1+num_ud+num_var]; %matrix structure
-        for i = 1:num_var % create Vi matrix for each variable
+        structV = [1, 1+num_ud+num_vars]; %matrix structure
+        for i = 1:num_vars % create Vi matrix for each variable
             V{i} = lmivar(2, structV);
         end
         
         error_t = (sigma * size(Oki,2))^2; %error tolerance
         for i = 1:size(Oki,1)
-            n = (i+(1-1)*num_var);
+            n = (i+(1-1)*num_vars);
             lmiterm([-n, 1,1,0],1);
             lmiterm([-n, 2,1,V{i}],1,Ok)
             lmiterm([-n, 2,1,0],-Oki(i,:))
@@ -107,7 +110,7 @@ function indx = FnRecursive(x,ud,chpoints)
             index_startj = chpoints(j,1);
             index_endj = chpoints(j,2);
                        
-            xsegj = x(1:num_var,index_startj: index_endj);
+            xsegj = x(1:num_vars,index_startj: index_endj);
             xkj = xsegj(:,1:end - winlen);
             xkij = [];
             xkij = xsegj(:, winlen+1:end);
@@ -125,8 +128,8 @@ function indx = FnRecursive(x,ud,chpoints)
 
             setlmis(lmi);
             error_tj = (sigma * size(Okj,2))^2;
-            for i = 1:num_var
-                n = (i+(j-1)*num_var);
+            for i = 1:num_vars
+                n = (i+(j-1)*num_vars);
                 lmiterm([-n, 1,1,0],1);
                 lmiterm([-n, 2,1,V{i}],1,Okj)
                 lmiterm([-n, 2,1,0],-Okij(i,:))
@@ -145,7 +148,7 @@ function indx = FnRecursive(x,ud,chpoints)
                 lenj = length(Okj);
                 len = length(Ok);
                 for i = 1:size(Okij,1)
-                    n = (j-1)*num_var+i;
+                    n = (j-1)*num_vars+i;
                     lmi = dellmi(lmi,n);
                 end
             else
@@ -154,7 +157,7 @@ function indx = FnRecursive(x,ud,chpoints)
                     return;
                 end
                 for i = 1:size(Okij,1)
-                    n = (j-1)*num_var+i;
+                    n = (j-1)*num_vars+i;
                     lmi = dellmi(lmi,n);
                 end
                 xc = [xc, xsegj]; 

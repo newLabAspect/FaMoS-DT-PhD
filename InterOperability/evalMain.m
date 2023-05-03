@@ -1,7 +1,7 @@
-function [correctAll,falseAll,t_cluster,t_train,trace] = evalMain(allData,evalData,folder)
+function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFalse] = evalMain(allData,evalData,folder)
     %only global vars needed for this top level program are listed here, if 
     %needed in subfunctions they are listed only there for simplicity
-    global num_var num_ud Ts max_deriv useLMIrefine methodCluster methodTraining variedMetricSteps variedMetric
+    global num_var num_ud Ts max_deriv useLMIrefine methodCluster methodTraining variedMetricSteps variedMetric offsetCluster
     
     num = 1; x = []; ud = [];
     
@@ -56,11 +56,7 @@ function [correctAll,falseAll,t_cluster,t_train,trace] = evalMain(allData,evalDa
     end
 
     tic;
-    %change num_var so that derivs are also used (only needed for LMIs)
-    num_var = num_var * (1 + 0);
     trace = FnClusterSegs(trace, x, ud);
-    %change back, just in case
-    num_var = num_var / (1 + 0);
     
     t_cluster = toc;
 
@@ -166,14 +162,21 @@ function [correctAll,falseAll,t_cluster,t_train,trace] = evalMain(allData,evalDa
             
             % LI Estimation given parameters
             [trace_train,label_guard] = FnLI(trace(setdiff(allData,evalData)), eta, lambda, gamma);
-            
+            % Extend label_guard by zeros for considered derivatives so
+            % that generated automaton xml file is clean (currently no
+            % transitions based on derivatives are allowed)
+            for k = 1:length(label_guard)
+                curr_label_guard = cell2mat(label_guard(k));
+                label_guard(k) = {[curr_label_guard(1:num_var); zeros(offsetCluster*num_var,1); curr_label_guard((num_var+1):end)]};
+            end
+
             % Setup PTA given LIs and ODEs
             pta_trace = FnPTA(trace_train);
             pta_trace = pta_filter(pta_trace);
             
             % Generate Final Automaton model
             
-            FnGenerateHyst([folder, filesep, 'automata_learning'],label_guard, num_var, ode, pta_trace);
+            FnGenerateHyst([folder, filesep, 'automata_learning'],label_guard, num_var*(1+offsetCluster), ode, pta_trace);
             t_train = toc; %how to measure this time should be discussed
 
         %maybe move for higher throughput
@@ -191,7 +194,7 @@ function [correctAll,falseAll,t_cluster,t_train,trace] = evalMain(allData,evalDa
 
             xmlstruct = readstruct([folder, filesep, 'automata_learning.xml']);
             
-            [correct,false] = FnEvaluate(trace(evalData),xmlstruct,ode,tolLI);
+            [correct,false] = FnEvaluate(trace(evalData),xmlstruct,ode,tolLI,label_guard);
             correctAll = [correctAll; correct];
             falseAll = [falseAll; false];
             if(variedMetric == -1)

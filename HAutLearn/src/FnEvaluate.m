@@ -1,34 +1,41 @@
-function [correct,false] = FnEvaluate(trace, xmlstruct, ode, tol)
-global num_var
+function [correct,false] = FnEvaluate(trace, xmlstruct, ode, tol, label_guard)
+global num_var offsetCluster
     %compute relation between clustering ids and location ids
     locations = xmlstruct.component(1).location;
     locToClusterID = containers.Map('KeyType','double','ValueType','double');
     
     for i = 1:length(locations)
         flow = locations(i).flow;
-        AB = zeros(num_var,num_var+1);
+        num_vars = num_var * (1+offsetCluster);
+        AB = zeros(num_vars,num_vars+1);
         lines = split(flow,'&');
         %create system matrix for currently considered location
-        for j = 1:num_var
+        for j = 1:num_vars
             curr_line = lines(j);
             curr_line = strrep(curr_line,"+ ","+");
             curr_line = char(strrep(curr_line,"- ","-"));
-            for k = 1:num_var
+            for k = 1:num_vars
                 pos_end = strfind(curr_line,sprintf(" * x%d",k))-1;
                 if(isempty(pos_end))
-                    continue
+                    continue;
                 end
                 pos_start = strfind(curr_line(1:pos_end)," ");
                 pos_start = pos_start(end);
                 coeff = sscanf(curr_line((pos_start):pos_end),"%f");
                 curr_line((pos_start):(pos_end+5)) = [];
+                if(isempty(coeff))
+                    continue;
+                end
                 AB(j,k) = coeff;
             end
             pos_end = length(curr_line);
             pos_start = strfind(curr_line(1:(pos_end-1))," ");
             pos_start = pos_start(end);
             coeff = sscanf(curr_line((pos_start):pos_end),"%f");
-            AB(j,num_var+1) = coeff;
+            if(isempty(coeff))
+                continue;
+            end
+            AB(j,num_vars+1) = coeff;
         end
         %find corresponding matrix in ode (within tolerance)
         dev = zeros(1,length(ode));
@@ -74,6 +81,20 @@ global num_var
         else
             condition(1,2+num_var+1) = -1; %representing +1.0 < 0.0
         end
+        %find corresponding vector in label_guard (within tolerance)
+        dev = zeros(1,length(label_guard));
+        for j = 1:length(label_guard)
+            comp_cond = condition(1,3:end);
+            comp_guard = cell2mat(label_guard(1,j))';
+            %trim constants out of label guard
+            comp_guard(num_var+1) = comp_guard(end);
+            comp_guard = comp_guard(1:length(comp_cond));
+            dev(1,j) = sum(sum(abs(comp_cond-comp_guard))); %maybe other matrix norm
+        end
+        %enhance condition with unrounded entry out of label_guard
+        [mindev,pos_min] = min(dev);
+        enhance_guard = cell2mat(label_guard(1,pos_min))';
+        condition(1,3:(num_var+2)) = enhance_guard(1,1:num_var);
         conditions = [conditions; condition];
         num = num + 1;
     end
