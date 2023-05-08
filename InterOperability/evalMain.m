@@ -116,8 +116,8 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
             
             %vary selected metric
             if(variedMetric == 1)
-                X = X(1:variedMetricSteps(1,j),:);
-                Y = Y(1:variedMetricSteps(1,j),:);
+                X = X(1:round(variedMetricSteps(1,j)*size(X,1),0),:);
+                Y = Y(1:round(variedMetricSteps(1,j)*size(Y,1),0),:);
             end
 
             tic;
@@ -154,14 +154,58 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
 
         correctAll = [];
         falseAll = [];
+
+        trace_train_short = trace(setdiff(allData,evalData));
+        max_len_trace = 0;
+        for p = 1:length(trace_train_short)
+            max_len_trace = max_len_trace + size(trace_train_short(p).x,1);
+        end
         
-        
+        %maybe move for higher throughput
+        for j = 1:length(variedMetricSteps)
+            %vary selected metric
+            if(variedMetric == 0)
+                eta = variedMetricSteps(1,j);
+            elseif(variedMetric == 1)
+                lambda = variedMetricSteps(1,j);
+            elseif(variedMetric == 2)
+                gamma = variedMetricSteps(1,j);
+            elseif(variedMetric == 3)
+                tolLI = variedMetricSteps(1,j);
+            elseif(variedMetric == 4)
+                used_len = round(variedMetricSteps(1,j) * max_len_trace,0);
+                trace_train_short = trace(setdiff(allData,evalData));
+                for p = 1:length(trace_train_short)
+                    if(used_len == 0)
+                        % all remaining trace entries need to be deleted
+                        trace_train_short(p:length(trace_train_short)) = [];
+                        break;
+                    elseif(used_len < length(trace_train_short(p).x))
+                        % trim x entries out of trace
+                        trace_train_short(p).x = trace_train_short(p).x(1:used_len,:);
+                        % trim changepoints out of trace
+                        toDelete = find(trace_train_short(p).chpoints >= used_len);
+                        trace_train_short(p).chpoints(toDelete) = [];
+                        % trim cluster ids out of trace
+                        trace_train_short(p).labels_trace = trace_train_short(p).labels_trace(1:length(trace_train_short(p).chpoints));
+                        % add ending chpoint to trace
+                        trace_train_short(p).chpoints = [trace_train_short(p).chpoints; used_len];
+                        % add terminating 0 to cluster ids
+                        trace_train_short(p).labels_trace = [trace_train_short(p).labels_trace;0];
+                        % trace data structure is completed
+                        used_len = 0;
+                    else
+                        % trace data structure still needs entries to achieve target size
+                        used_len = used_len - length(trace_train_short(p).x);
+                    end
+                end
+            end
 
             tic;
-            ode = FnEstODE(trace(setdiff(allData,evalData)));
+            ode = FnEstODE(trace_train_short);
             
             % LI Estimation given parameters
-            [trace_train,label_guard] = FnLI(trace(setdiff(allData,evalData)), eta, lambda, gamma);
+            [trace_train,label_guard] = FnLI(trace_train_short, eta, lambda, gamma);
             % Extend label_guard by zeros for considered derivatives so
             % that generated automaton xml file is clean (currently no
             % transitions based on derivatives are allowed)
@@ -178,19 +222,6 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
             
             FnGenerateHyst([folder, filesep, 'automata_learning'],label_guard, num_var*(1+offsetCluster), ode, pta_trace);
             t_train = toc; %how to measure this time should be discussed
-
-        %maybe move for higher throughput
-        for j = 1:length(variedMetricSteps)
-            %vary selected metric
-            if(variedMetric == 0)
-                eta = variedMetricSteps(1,j);
-            elseif(variedMetric == 1)
-                lambda = variedMetricSteps(1,j);
-            elseif(variedMetric == 2)
-                gamma = variedMetricSteps(1,j);
-            elseif(variedMetric == 3)
-                tolLI = variedMetricSteps(1,j);
-            end
 
             xmlstruct = readstruct([folder, filesep, 'automata_learning.xml']);
             

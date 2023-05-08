@@ -37,10 +37,11 @@ fixedIntervalLength = 1; precisionDTL = 0.0001; useTime = true;
 
 %% Vary Paras over time
 global variedMetric variedMetricSteps
-variedMetric = -1; % -1: No parameter is varied
+variedMetric = 4; % -1: No parameter is varied
 %DTL: 0: precisionDTL 1: trainingSetSize
-%PTA: 0: eta 1: lambda 2: gamma 3: toLi
-variedMetricSteps = linspace(0.01,0.001,100);
+%PTA: 0: eta 1: lambda 2: gamma 3: toLi 4: trainingSetSize (for low number
+%gamma needs to be lowered otherwise LIs cannot be computed)
+variedMetricSteps = linspace(0.2,1.0,9);
 
 %% Actual execution
 allData = 1:10;
