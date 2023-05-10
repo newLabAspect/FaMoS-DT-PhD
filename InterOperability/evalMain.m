@@ -86,6 +86,7 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
         
         correctAll = [];
         falseAll = [];
+        t_train = [];
 
         for j = 1:length(variedMetricSteps)
             %vary selected metric
@@ -103,6 +104,7 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
                 Ye = [Ye; Ynew];
             end
             
+            tic;
             %compute maximal training data
             X = [];
             Y = [];
@@ -120,9 +122,8 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
                 Y = Y(1:round(variedMetricSteps(1,j)*size(Y,1),0),:);
             end
 
-            tic;
             [Mdl,impure_leaves,num_nodes,learn_time] = FnBuildDT(X,Y);
-            t_train = toc;
+            t_train = [t_train; toc];
         
             % Actual Eval
             correct = 0;
@@ -154,6 +155,7 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
 
         correctAll = [];
         falseAll = [];
+        t_train = [];
 
         trace_train_short = trace(setdiff(allData,evalData));
         max_len_trace = 0;
@@ -175,6 +177,7 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
             elseif(variedMetric == 4)
                 used_len = round(variedMetricSteps(1,j) * max_len_trace,0);
                 trace_train_short = trace(setdiff(allData,evalData));
+                labels_num = [];
                 for p = 1:length(trace_train_short)
                     if(used_len == 0)
                         % all remaining trace entries need to be deleted
@@ -198,12 +201,18 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
                         % trace data structure still needs entries to achieve target size
                         used_len = used_len - length(trace_train_short(p).x);
                     end
+                    %to exclude to trailing 0
+                    labels_num = unique([labels_num; trace_train_short(p).labels_trace(1:(end-1))]);
+                end
+                for p = 1:length(trace_train_short)
+                    trace_train_short(p).labels_num = labels_num;
                 end
             end
 
-            tic;
+            %ODE estimation excluded from time, because both do them
             ode = FnEstODE(trace_train_short);
             
+            tic;
             % LI Estimation given parameters
             [trace_train,label_guard] = FnLI(trace_train_short, eta, lambda, gamma);
             % Extend label_guard by zeros for considered derivatives so
@@ -221,7 +230,7 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
             % Generate Final Automaton model
             
             FnGenerateHyst([folder, filesep, 'automata_learning'],label_guard, num_var*(1+offsetCluster), ode, pta_trace);
-            t_train = toc; %how to measure this time should be discussed
+            t_train = [t_train; toc]; %how to measure this time should be discussed
 
             xmlstruct = readstruct([folder, filesep, 'automata_learning.xml']);
             

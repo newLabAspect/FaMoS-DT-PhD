@@ -30,17 +30,17 @@ global eta lambda gamma tolLI
 eta = 100000; % number of iterations 
 lambda = 0.1; % tolerance 
 gamma = 10; %the least number of inlayers
-tolLI = 0.00004; %tolerance in evaluation of LIs
+tolLI = 0.00035; %tolerance in evaluation of LIs
 % DTL paras (can comment out if PTA is used)
 global fixedIntervalLength precisionDTL useTime
 fixedIntervalLength = 1; precisionDTL = 0.001; useTime = true;
 
 %% Vary Paras over time
 global variedMetric variedMetricSteps
-variedMetric = -1; % -1: No parameter is varied
+variedMetric = 4; % -1: No parameter is varied
 %DTL: 0: precisionDTL 1: trainingSetSize
-%PTA: 0: eta 1: lambda 2: gamma 3: toLi
-variedMetricSteps = linspace(0.005,0.00005,100);
+%PTA: 0: eta 1: lambda 2: gamma 3: toLi 4: trainingSetSize
+variedMetricSteps = linspace(0.4,0.7,31); %errors in range 0.7...0.8
 
 %% Actual execution
 allData = 1:10;
