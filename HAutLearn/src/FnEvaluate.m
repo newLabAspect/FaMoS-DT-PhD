@@ -139,6 +139,7 @@ global num_var offsetCluster
                 correct = correct + 1;
             else
                 false = false + 1;
+                %disp([num2str(overall_sum),int2str(condition(1,2+num_var+1))])
             end
         end
     end

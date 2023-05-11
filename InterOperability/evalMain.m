@@ -209,28 +209,30 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
                 end
             end
 
-            %ODE estimation excluded from time, because both do them
-            ode = FnEstODE(trace_train_short);
-            
-            tic;
-            % LI Estimation given parameters
-            [trace_train,label_guard] = FnLI(trace_train_short, eta, lambda, gamma);
-            % Extend label_guard by zeros for considered derivatives so
-            % that generated automaton xml file is clean (currently no
-            % transitions based on derivatives are allowed)
-            for k = 1:length(label_guard)
-                curr_label_guard = cell2mat(label_guard(k));
-                label_guard(k) = {[curr_label_guard(1:num_var); zeros(offsetCluster*num_var,1); curr_label_guard((num_var+1):end)]};
-            end
-
-            % Setup PTA given LIs and ODEs
-            pta_trace = FnPTA(trace_train);
-            pta_trace = pta_filter(pta_trace);
-            
-            % Generate Final Automaton model
-            
-            FnGenerateHyst([folder, filesep, 'automata_learning'],label_guard, num_var*(1+offsetCluster), ode, pta_trace);
-            t_train = [t_train; toc]; %how to measure this time should be discussed
+            if(j == 1 || variedMetric ~= 3)
+                %ODE estimation excluded from time, because both do them
+                ode = FnEstODE(trace_train_short);
+                
+                tic;
+                % LI Estimation given parameters
+                [trace_train,label_guard] = FnLI(trace_train_short, eta, lambda, gamma);
+                % Extend label_guard by zeros for considered derivatives so
+                % that generated automaton xml file is clean (currently no
+                % transitions based on derivatives are allowed)
+                for k = 1:length(label_guard)
+                    curr_label_guard = cell2mat(label_guard(k));
+                    label_guard(k) = {[curr_label_guard(1:num_var); zeros(offsetCluster*num_var,1); curr_label_guard((num_var+1):end)]};
+                end
+    
+                % Setup PTA given LIs and ODEs
+                pta_trace = FnPTA(trace_train);
+                pta_trace = pta_filter(pta_trace);
+                
+                % Generate Final Automaton model
+                
+                FnGenerateHyst([folder, filesep, 'automata_learning'],label_guard, num_var*(1+offsetCluster), ode, pta_trace);
+                t_train = [t_train; toc]; %how to measure this time should be discussed
+            end %What happens with variables in scope? Seems to work...
 
             xmlstruct = readstruct([folder, filesep, 'automata_learning.xml']);
             
