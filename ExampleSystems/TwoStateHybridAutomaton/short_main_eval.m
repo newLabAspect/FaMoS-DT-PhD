@@ -8,7 +8,7 @@ addpath(['InterOperability']);
 global num_var num_ud Ts Time methodCluster methodTraining windowSize max_deriv offsetCluster
 num_var = 1; num_ud = 0;
 methodCluster = 0; % 0: DTW, 1: DTW & LMI, 2: LMI
-methodTraining = 1; % 0: DTL, 1: PTA
+methodTraining = 0; % 0: DTL, 1: PTA
 Ts = 0.01; Time = false;
 % Changepoint detection paras
 windowSize = 10; max_deriv = 3;
@@ -42,7 +42,7 @@ global variedMetric variedMetricSteps
 variedMetric = -1; % -1: No parameter is varied
 %DTL: 0: precisionDTL 1: trainingSetSize
 %PTA: 0: eta 1: lambda 2: gamma 3: toLi 4: trainingSetSize
-variedMetricSteps = linspace(0.3,1.0,71);
+variedMetricSteps = linspace(0.1,1.0,91);
 
 %% Actual execution
 allData = 1:10;

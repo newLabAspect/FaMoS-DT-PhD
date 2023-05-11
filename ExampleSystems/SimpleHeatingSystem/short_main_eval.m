@@ -8,7 +8,7 @@ addpath(['InterOperability']);
 global num_var num_ud Ts Time methodCluster methodTraining windowSize max_deriv offsetCluster
 num_var = 1; num_ud = 0;
 methodCluster = 0; % 0: DTW, 1: DTW & LMI, 2: LMI
-methodTraining = 1; % 0: DTL, 1: PTA
+methodTraining = 0; % 0: DTL, 1: PTA
 Ts = 0.01; Time = false;
 % Changepoint detection paras
 windowSize = 10; max_deriv = 3;
@@ -23,6 +23,8 @@ sigma = 0.0015;  winlen=5; % LMI paras
 % DTW paras (can comment out if only LMIs used)
 global thresClusterMax thresClusterMin facThres
 thresClusterMax = 0.1; thresClusterMin = 0.01; facThres = 2.5;
+% Slightly Off Paras
+%thresClusterMax = 0.2; thresClusterMin = 0.00009; facThres = 10.0;
 
 %% Training Paras
 % PTA paras (can comment out if DTL is used)
