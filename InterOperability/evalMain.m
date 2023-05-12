@@ -226,7 +226,8 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
     
                 % Setup PTA given LIs and ODEs
                 pta_trace = FnPTA(trace_train);
-                pta_trace = pta_filter(pta_trace);
+                %can solve bugs if you comment out next line. But why ?
+                %pta_trace = pta_filter(pta_trace);
                 
                 % Generate Final Automaton model
                 

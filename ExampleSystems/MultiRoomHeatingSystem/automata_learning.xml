@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<sspaceex xmlns="http://www-verimag.imag.fr/xml-namespaces/sspaceex" math="SpaceEx" version="0.2">
+   <component id="ExampleSystems/MultiRoomHeatingSystem/automata_learning_sys">
+      <param controlled="true" d1="1" d2="1" dynamics="any" local="false" name="x1" type="real"/>
+      <param controlled="true" d1="1" d2="1" dynamics="any" local="false" name="x2" type="real"/>
+      <param controlled="true" d1="1" d2="1" dynamics="any" local="false" name="x3" type="real"/>
+      <location id="1" name="loc1">
+         <flow>x1' == 0.000000000000005297 * x3 - 0.00000000000000516 * x2 - 0.1001 * x1 &amp;
+ x2' == 0.000000000000012 * x3 - 0.1001 * x2 &amp;
+ x3' == 0.0000000000000008782 * x2 - 0.1001 * x3</flow>
+      </location>
+      <location id="2" name="loc2">
+         <flow>x1' == 0.2613 * x1 - 0.03236 * x2 - 0.01967 * x3 &amp;
+ x2' == -0.1001 * x2 - 0.00000000000001565 * x3 &amp;
+ x3' == -0.000000000000004529 * x2 - 0.1001 * x3</flow>
+      </location>
+      <location id="3" name="loc3">
+         <flow>x1' == 0.00000000000006411 * x2 - 0.1001 * x1 + 0.0000000000000183 * x3 &amp;
+ x2' == 0.000000000000001354 * x3 - 0.1001 * x2 - 0.00000000000001734 * x1 &amp;
+ x3' == 0.2318 * x3 - 0.009847 * x2 - 0.01108 * x1</flow>
+      </location>
+      <location id="4" name="loc4">
+         <flow>x1' == 0.0000000000000002487 * x3 - 0.000000000000007752 * x2 - 0.1001 * x1 &amp;
+ x2' == 0.2324 * x2 - 0.01022 * x1 - 0.01067 * x3 &amp;
+ x3' == 0.000000000000006286 * x2 - 0.00000000000001131 * x1 - 0.1001 * x3</flow>
+      </location>
+      <location id="5" name="loc5">
+         <flow>x1' == 0.000000000000005297 * x3 - 0.00000000000000516 * x2 - 0.1001 * x1 &amp;
+ x2' == 0.000000000000012 * x3 - 0.1001 * x2 &amp;
+ x3' == 0.0000000000000008782 * x2 - 0.1001 * x3</flow>
+      </location>
+      <location id="6" name="loc6">
+         <flow>x1' == 0.0 &amp;
+ x2' == 0.0 &amp;
+ x3' == 0.0</flow>
+      </location>
+      <location id="7" name="loc7">
+         <flow>x1' == 0.2613 * x1 - 0.03236 * x2 - 0.01967 * x3 &amp;
+ x2' == -0.1001 * x2 - 0.00000000000001565 * x3 &amp;
+ x3' == -0.000000000000004529 * x2 - 0.1001 * x3</flow>
+      </location>
+      <location id="8" name="loc8">
+         <flow>x1' == 0.0000000000000002487 * x3 - 0.000000000000007752 * x2 - 0.1001 * x1 &amp;
+ x2' == 0.2324 * x2 - 0.01022 * x1 - 0.01067 * x3 &amp;
+ x3' == 0.000000000000006286 * x2 - 0.00000000000001131 * x1 - 0.1001 * x3</flow>
+      </location>
+      <location id="9" name="loc9">
+         <flow>x1' == 0.00000000000006411 * x2 - 0.1001 * x1 + 0.0000000000000183 * x3 &amp;
+ x2' == 0.000000000000001354 * x3 - 0.1001 * x2 - 0.00000000000001734 * x1 &amp;
+ x3' == 0.2318 * x3 - 0.009847 * x2 - 0.01108 * x1</flow>
+      </location>
+      <location id="10" name="loc10">
+         <flow>x1' == 0.000000000000005297 * x3 - 0.00000000000000516 * x2 - 0.1001 * x1 &amp;
+ x2' == 0.000000000000012 * x3 - 0.1001 * x2 &amp;
+ x3' == 0.0000000000000008782 * x2 - 0.1001 * x3</flow>
+      </location>
+      <location id="11" name="loc11">
+         <flow>x1' == 0.2613 * x1 - 0.03236 * x2 - 0.01967 * x3 &amp;
+ x2' == -0.1001 * x2 - 0.00000000000001565 * x3 &amp;
+ x3' == -0.000000000000004529 * x2 - 0.1001 * x3</flow>
+      </location>
+      <location id="12" name="loc12">
+         <flow>x1' == 0.2613 * x1 - 0.03236 * x2 - 0.01967 * x3 &amp;
+ x2' == -0.1001 * x2 - 0.00000000000001565 * x3 &amp;
+ x3' == -0.000000000000004529 * x2 - 0.1001 * x3</flow>
+      </location>
+      <transition asap="false" bezier="false" source="1" target="2" timedriven="false">
+         <guard>-1.263 * x1 - 0.001623 * x2 - 0.0007904 * x3 + 1.0 &gt; 0.0</guard>
+         <labelposition/>
+         <middlepoint/>
+      </transition>
+      <transition asap="false" bezier="false" source="2" target="3" timedriven="false">
+         <guard>0.0005281 * x2 - 1.003 * x1 + 0.001921 * x3 + 1.0 &lt; 0.0</guard>
+         <labelposition/>
+         <middlepoint/>
+      </transition>
+      <transition asap="false" bezier="false" source="3" target="4" timedriven="false">
+         <guard>0.03735 * x1 - 0.02221 * x2 - 1.017 * x3 + 1.0 &lt; 0.0</guard>
+         <labelposition/>
+         <middlepoint/>
+      </transition>
+      <transition asap="false" bezier="false" source="4" target="2" timedriven="false">
+         <guard>0.03099 * x3 - 1.019 * x2 - 0.01108 * x1 + 1.0 &lt; 0.0</guard>
+         <labelposition/>
+         <middlepoint/>
+      </transition>
+      <transition asap="false" bezier="false" source="5" target="2" timedriven="false">
+         <guard>-1.263 * x1 - 0.001623 * x2 - 0.0007904 * x3 + 1.0 &gt; 0.0</guard>
+         <labelposition/>
+         <middlepoint/>
+      </transition>
+      <transition asap="false" bezier="false" source="2" target="6" timedriven="false">
+         <guard>-0.4186 * x1 - 0.3728 * x2 - 0.3367 * x3 + 1.0 &lt; 0.0</guard>
+         <labelposition/>
+         <middlepoint/>
+      </transition>
+      <transition asap="false" bezier="false" source="1" target="2" timedriven="false">
+         <guard>0.01226 * x1 - 0.008868 * x2 - 1.003 * x3 + 1.0 &lt; 0.0</guard>
+         <labelposition/>
+         <middlepoint/>
+      </transition>
+      <transition asap="false" bezier="false" source="2" target="8" timedriven="false">
+         <guard>0.0003581 * x2 - 0.9953 * x1 - 0.006785 * x3 + 1.0 &lt; 0.0</guard>
+         <labelposition/>
+         <middlepoint/>
+      </transition>
+      <transition asap="false" bezier="false" source="8" target="9" timedriven="false">
+         <guard>0.01412 * x3 - 0.9975 * x2 - 0.01627 * x1 + 1.0 &lt; 0.0</guard>
+         <labelposition/>
+         <middlepoint/>
+      </transition>
+      <transition asap="false" bezier="false" source="9" target="2" timedriven="false">
+         <guard>0.01226 * x1 - 0.008868 * x2 - 1.003 * x3 + 1.0 &lt; 0.0</guard>
+         <labelposition/>
+         <middlepoint/>
+      </transition>
+      <transition asap="false" bezier="false" source="1" target="10" timedriven="false">
+         <guard>-0.03278 * x1 - 0.145 * x2 - 0.8443 * x3 + 1.0 &lt; 0.0</guard>
+         <labelposition/>
+         <middlepoint/>
+      </transition>
+      <transition asap="false" bezier="false" source="10" target="7" timedriven="false">
+         <guard>-1.263 * x1 - 0.001623 * x2 - 0.0007904 * x3 + 1.0 &gt; 0.0</guard>
+         <labelposition/>
+         <middlepoint/>
+      </transition>
+      <transition asap="false" bezier="false" source="1" target="11" timedriven="false">
+         <guard>0.03099 * x3 - 1.019 * x2 - 0.01108 * x1 + 1.0 &lt; 0.0</guard>
+         <labelposition/>
+         <middlepoint/>
+      </transition>
+      <transition asap="false" bezier="false" source="11" target="3" timedriven="false">
+         <guard>0.0005281 * x2 - 1.003 * x1 + 0.001921 * x3 + 1.0 &lt; 0.0</guard>
+         <labelposition/>
+         <middlepoint/>
+      </transition>
+      <transition asap="false" bezier="false" source="1" target="12" timedriven="false">
+         <guard>0.01226 * x1 - 0.008868 * x2 - 1.003 * x3 + 1.0 &lt; 0.0</guard>
+         <labelposition/>
+         <middlepoint/>
+      </transition>
+      <transition asap="false" bezier="false" source="12" target="8" timedriven="false">
+         <guard>0.0003581 * x2 - 0.9953 * x1 - 0.006785 * x3 + 1.0 &lt; 0.0</guard>
+         <labelposition/>
+         <middlepoint/>
+      </transition>
+      <transition asap="false" bezier="false" source="9" target="5" timedriven="false">
+         <guard>-0.03278 * x1 - 0.145 * x2 - 0.8443 * x3 + 1.0 &lt; 0.0</guard>
+         <labelposition/>
+         <middlepoint/>
+      </transition>
+   </component>
+   <component id="ExampleSystems/MultiRoomHeatingSystem/automata_learning_net">
+      <param controlled="true" d1="1" d2="1" dynamics="any" local="false" name="x1" type="real"/>
+      <param controlled="true" d1="1" d2="1" dynamics="any" local="false" name="x2" type="real"/>
+      <param controlled="true" d1="1" d2="1" dynamics="any" local="false" name="x3" type="real"/>
+      <bind as="ExampleSystems/MultiRoomHeatingSystem/automata_learning" component="ExampleSystems/MultiRoomHeatingSystem/automata_learning_sys">
+         <map key="x1">x1</map>
+         <map key="x2">x2</map>
+         <map key="x3">x3</map>
+      </bind>
+   </component>
+</sspaceex>
