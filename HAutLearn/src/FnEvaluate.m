@@ -1,4 +1,4 @@
-function [correct,false] = FnEvaluate(trace, xmlstruct, ode, tol, label_guard)
+function [correct,false,conditions] = FnEvaluate(trace, xmlstruct, ode, tol, label_guard)
 global num_var offsetCluster
     %compute relation between clustering ids and location ids
     locations = xmlstruct.component(1).location;
