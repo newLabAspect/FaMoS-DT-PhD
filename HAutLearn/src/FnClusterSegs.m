@@ -61,8 +61,8 @@ function indx = FnRecursive(x,ud,chpoints)
         chpc = 1;
         indx = 1;
         unindx = [];
-        %NOTE: change num_var to num_vars and to not change num_var to that
-        %value untested, could have problems!
+        % NOTE: changed num_var to num_vars so that all  derivatives up to 
+        % selected degree are considered. Might induce problems!
         num_vars = num_var * (1 + offsetCluster);
         
         num_segments = size(chpoints,1);

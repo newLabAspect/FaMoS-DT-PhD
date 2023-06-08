@@ -10,31 +10,28 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
     addpath(['ProposedAlgorithm', filesep, 'src']);
     
     %% Changepoint determination and trace setup
-    normalization = zeros(num_var,1); % obviously not ideal but works
+    
+    % Normalize trace to [-1,+1] by computing maximum absolute trace value
+    normalization = zeros(num_var,1);
     for i = allData
         load(['training', int2str(i),'.mat']);
         for j = 1:num_var
-            normalization(j,1) = max(normalization(j,1),max(xout(:,j)));
+            normalization(j,1) = max(normalization(j,1),max(abs(xout(:,j))));
         end
     end
+
+    % Carry out normalization, compute derivatives and detect changepoints
+    % Results are written into trace datastructure (incl. ground truths)
     for i = allData
         load(['training', int2str(i),'.mat']);
-        for j = 1:num_var
-            xout(:,j) = 1/normalization(j,1) * xout(:,j);
-        end
-        for deriv = 1:max_deriv
-            for curr_var = 1:num_var
-                pos_last_deriv = (deriv-1)*num_var + curr_var;
-                xout = [xout, [zeros(deriv,1) ; 1/Ts*diff(xout((deriv):end,pos_last_deriv))]];
-            end
-        end
-        %strip info from front bc derivs are not available there
-        xout = xout((max_deriv+1):end,:);
+        xout = FnNormAndDiff(xout,normalization);
         trace_temp = FnDetectChangePoints(xout, num_var);
+        % Ground truths for states and changepoints
         trace_temp.true_states = states;
         trace_temp.true_chps = chpoints;
         trace(num) = trace_temp;
-        %all traces are appended (needed for clustering in that form)
+        % All trace values are combined into one array as this form is
+        % needed in the clustering stage
         x = [x; trace(num).x];
         ud = [ud; trace(num).ud];
         num = num+1; 

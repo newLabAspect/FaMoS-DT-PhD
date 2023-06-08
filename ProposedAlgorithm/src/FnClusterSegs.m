@@ -1,32 +1,35 @@
 function trace = FnClusterSegs(trace, x, ud)
-    global winlen thresClusterMax thresClusterMin num_var offsetCluster facThres useLMIrefine windowSize;
+    global num_var;
 
+    % Move this into own function?
+    % Include dummy entry to simplify computations
     segIndex = [0,0];
     segIndex_var = cell(num_var,1);
     segIndex_var(1:num_var,1) = {[0,0]};
+    % Transform changepoints to segments consisting of start and end point
     for i=1:length(trace)  
-        %segments globally
+        % Global segments
         chpoints = (trace(i).chpoints);
-        %start and end point of each segment are saved
         chsegments = [chpoints(1:end-1), chpoints(2:end)];
+        % Increase start point by 1 to have no overlapping segments
         chsegments(2:end,1) = chsegments(2:end,1)+1;
-        %in x all traces are appended thus offsets need to be added for
-        %changepoints to be consistent with x (and ud)
+        % Apply offsets to changepoints as all trace values are appended to 
+        % form x (and ud) to ensure consistency
         segIndex = [segIndex; segIndex(end,2) + chsegments];
 
-        %segments per output variable
+        % Local segments (per output variable)
         chp_var = (trace(i).chpoints_per_var);
         for j=1:num_var
-            %start and end position of each segment saved
             chp_curr = cell2mat(chp_var(j,1));
             chsegments_var = [chp_curr(1:end-1),chp_curr(2:end)];
+            % Increase start by 1 as done above
             chsegments_var(2:end,1) = chsegments_var(2:end,1)+1;
-            %offset so that indices are relative to x
+            % Apply offsets to be consistent with x (and ud) as above
             segIndex_var_temp = cell2mat(segIndex_var(j,1));
             segIndex_var(j,1) = {[segIndex_var_temp; segIndex_var_temp(end,2) + chsegments_var]};
         end 
     end
-    %dummy line is deleted (used so that first append offset is 0)
+    % Dummy lines are deleted (used so that first append offset is 0)
     segIndex(1,:) = [];
     for j=1:num_var
         segIndex_var_temp = cell2mat(segIndex_var(j,1));
@@ -34,219 +37,139 @@ function trace = FnClusterSegs(trace, x, ud)
         segIndex_var(j,1) = {segIndex_var_temp};
     end
     
-    %create metric
-    dist_all = cell(num_var,1);
-    diag_all = cell(num_var,1);
-    combined_metric = cell(num_var,1);
-    for k = 1:num_var
-        segIndex_curr = cell2mat(segIndex_var(k,1));
-        dist_curr = zeros(size(segIndex_curr,1),size(segIndex_curr,1));
-        diag_curr = zeros(size(segIndex_curr,1),size(segIndex_curr,1));
-        combined_curr = zeros(size(segIndex_curr,1),size(segIndex_curr,1));
-        for i = 1:size(segIndex_curr,1)
-            start_i = segIndex_curr(i,1)+winlen;
-            end_i = segIndex_curr(i,2)-winlen;
-            seg_i = x(start_i:end_i,k+offsetCluster);
-            for j = i:size(segIndex_curr,1)
-                start_j = segIndex_curr(j,1)+winlen;
-                end_j = segIndex_curr(j,2)-winlen;
-                seg_j = x(start_j:end_j,k+offsetCluster);
-                common_len = min(size(seg_i,1),size(seg_j,1));
-                
-                incConst = 1;
-                if offsetCluster ~= 0
-                    incConst = 0;
-                end
-                
-                [dist_end, i_x, i_y] = dtw(seg_i((end-common_len+1):end,1)-seg_i(end,1)*incConst,seg_j((end-common_len+1):end,1)-seg_j(end,1)*incConst);
-                diag = corrcoef(i_x,i_y);
-                diag_end = diag(1,2);
-                dist_end = dist_end/size(i_x,2);
-                %diag can be NaN when sigma_x or sigma_y is 0, if this is the
-                %case diag can be set to 0 bc one const. is repeated in i_.
-                if isnan(diag_end)
-                    diag_end = 0.0;
-                end
-                sim_index_end = 0.5*dist_end+0.5*(1-diag_end);
+    % Compute similarity matrix which is used for clustering in next step
+    combined_metric = computeSimilarityMatrix(x,segIndex_var);
 
-                [dist_start, i_x, i_y] = dtw(seg_i(1:common_len,1)-seg_i(1,1)*incConst,seg_j(1:common_len,1)-seg_j(1,1)*incConst);
-                diag = corrcoef(i_x,i_y);
-                diag_start = diag(1,2);
-                dist_start = dist_start/size(i_x,2);
-                %diag can be NaN when sigma_x or sigma_y is 0, if this is the
-                %case diag can be set to 0 bc one const. is repeated in i_.
-                if isnan(diag_start)
-                    diag_start = 0.0;
-                end
-                sim_index_start = 0.5*dist_start+0.5*(1-diag_start);
+    % Create local clusters that are merged to get global clusters
+    [cluster_global, trace] = computeClusters(x,trace, combined_metric, segIndex, segIndex_var);
 
-                if (sim_index_start <= sim_index_end)
-                    dist_curr(i,j) = dist_start;
-                    diag_curr(i,j) = diag_start;
-                    combined_curr(i,j) = sim_index_start;
-                    %Due to symmetry
-                    dist_curr(j,i) = dist_start;
-                    diag_curr(j,i) = diag_start;
-                    combined_curr(j,i) = sim_index_start;
-                else
-                    dist_curr(i,j) = dist_end;
-                    diag_curr(i,j) = diag_end;
-                    combined_curr(i,j) = sim_index_end;
-                    %Due to symmetry
-                    dist_curr(j,i) = dist_end;
-                    diag_curr(j,i) = diag_end;
-                    combined_curr(j,i) = sim_index_end;
-                end
-            end
-        end
-        dist_all(k,1) = {dist_curr};
-        diag_all(k,1) = {diag_curr};
-        combined_metric(k,1) = {combined_curr};
-    end
-
-    %actual clustering
-    for i=1:length(trace)
-        trace(i).labels_trace_per_var = cell(num_var,1);
-    end
-    cluster_segs = cell(num_var,1);
-    for k = 1:num_var
-        segIndex_curr = cell2mat(segIndex_var(k,1));
-        clusters = cell(size(segIndex_curr,1),1);
-        alreadyClustered = zeros(size(segIndex_curr,1),2);
-        for i = 1:size(segIndex_curr,1)
-            thres = facThres*min(combined_metric{k,1}(i,union(1:(i-1),(i+1):end)));
-            if(thres < thresClusterMin)
-                thres = thresClusterMin;
-            elseif(thres > thresClusterMax)
-                thres = thresClusterMax;
-            end
-            for j = i:size(segIndex_curr,1) %Possibly 1 instaed of 1
-                [clusters,alreadyClustered] = FnDecideSimilar(i,j,clusters,alreadyClustered, cell2mat(combined_metric(k)), thres);
-            end
-        end
-
-        %assign local cluster IDs for each output variable
-
-        cluster_curr = zeros(size(segIndex_curr,1),1);
-        for i = 1:size(segIndex_curr,1)
-            cluster = cell2mat(clusters(i));
-            for j =1:size(cluster,2)
-                cluster_curr(cluster(j)) = i;
-            end
-        end
-        cluster_segs(k,1) = {cluster_curr};
-
-        for i=1:length(trace)
-            chpoints_var = cell2mat(trace(i).chpoints_per_var(k,1));
-            len_segs = length(chpoints_var)-1;
-            %add computed labels into trace datastructure
-            trace(i).labels_trace_per_var(k,1) = {cluster_curr(1:len_segs,1)};
-            cluster_curr(1:len_segs,:) = [];
-        end
-    end
-
-    %merge local clusters to global clusters
-    indices = ones(num_var,1);
-    nextid = 1;
-    cluster_global = zeros(size(segIndex,1),1);
-    M = containers.Map('KeyType','char','ValueType','double');
-    for i=1:size(segIndex,1)
-        key = '';
-        for k = 1:num_var
-            if(k ~= 1)
-                key = [key '-'];
-            end
-            cluster_curr = cell2mat(cluster_segs(k,1));
-            key = [key num2str(cluster_curr(indices(k,1),1))];
-            seg_curr = cell2mat(segIndex_var(k,1));
-            if(segIndex(i,2) == seg_curr(indices(k,1),2))
-                indices(k,1) = indices(k,1) + 1;
-            end
-        end
-        if(isKey(M,key) == 0)
-            M(key) = nextid;
-            nextid = nextid + 1;
-        end
-        cluster_global(i,1) = M(key);
-    end
-
-    %Use LMI to possibly merge incorrectly split-up clusters
-    if (useLMIrefine)
-        labels_num = unique(cluster_global(:,1));
-        progress_cnt = 1;
-        for i=labels_num'
-            posi = find(cluster_global == i,1); %make selection more advanced
-            if(isempty(posi))
-                continue;
-            end
-            start_i = segIndex(posi,1)+winlen;
-            end_i = segIndex(posi,2)-winlen;
-            %global clustering only possible if segment long enough, tune fac
-            if(end_i-start_i-1 < 3 * windowSize)
-                continue;
-            end
-            seg_i = x(start_i:end_i,1:num_var+offsetCluster*num_var); %maybe seperate var
-            for j=setdiff(labels_num',labels_num(1:i)')
-                disp([int2str(progress_cnt),'/', int2str((length(labels_num)^2-length(labels_num))/2)])
-                progress_cnt = progress_cnt + 1;
-                posj = find(cluster_global == j,1); %make selection more advanced
-                if(isempty(posj))
-                    continue;
-                end
-                start_j = segIndex(posj,1)+winlen;
-                end_j = segIndex(posj,2)-winlen;
-                %global clustering only possible if segment long enough, tune fac
-                if(end_j-start_j-1 < 3 * windowSize)
-                    continue;
-                end
-                seg_j = x(start_j:end_j,1:num_var*(offsetCluster+1)); %maybe seperate var
-                res = FnDecideSimilarLMI(seg_i',[],seg_j',[]);
-                if(res)
-                    posk = find(cluster_global == j);
-                    cluster_global(posk,1) = i;
-                end
-            end
-        end
-    end
-
-    %Save results into trace data structure
+    % Save global results into trace data structure
     labels_num = unique(cluster_global(:,1));
 
     for i=1:length(trace)
         chpoints = (trace(i).chpoints);
         len_segs = length(chpoints)-1;
         trace(i).labels_num = labels_num;
-        %add computed labels into trace datastructure
         trace(i).labels_trace = cluster_global(1:len_segs,1);
         cluster_global(1:len_segs,:) = [];
     end
 end
 
+%% Functions related to Computation of the similarity matrix
+
+function sim = computeComparison(seg_1,seg_2)
+% computeComparison returns the similarity index of two segments
+%   The similarity index is computed using a DTW comparison and combining
+%   the distance and diagonality metric into a single one
+    [dist, i_x, i_y] = dtw(seg_1,seg_2);
+    diag = corrcoef(i_x,i_y);
+    diag = diag(1,2);
+    dist = dist/size(i_x,2);
+    % Diag can be NaN if one signal is a constant resulting in
+    % zero variance, in this case no similarity is given
+    if isnan(diag)
+        diag = 0.0;
+    end
+    % Combine both metrics into a single one
+    sim = 0.5*dist+0.5*(1-diag);
+end
+
+function combined_metric = computeSimilarityMatrix(x, segIndex_var)
+% computeSimilarityMatrix returns the similarity matrix which quantifies
+% how similar each two segments are with repect to each output variable for 
+% the selected derivative
+%   The ideas to shorten the segments to a common length and carry out two
+%   comparisons - one aligned at the end and one aligned at the start - are
+%   used to compute the similarity matrix
+    global num_var winlen offsetCluster
+
+    combined_metric = cell(num_var,1);
+    % Comparison Metric computed for each output variable
+    for k = 1:num_var
+        segIndex_curr = cell2mat(segIndex_var(k,1));
+        combined_curr = zeros(size(segIndex_curr,1),size(segIndex_curr,1));
+        % Pairwise comparison first index
+        for i = 1:size(segIndex_curr,1)
+            % Start and end trimmed to ignore, e.g., peaks in derivatives
+            % caused by changepoints
+            start_i = segIndex_curr(i,1)+winlen;
+            end_i = segIndex_curr(i,2)-winlen;
+            seg_i = x(start_i:end_i,k+offsetCluster);
+            % Pairwise comparison second index
+            for j = i:size(segIndex_curr,1)
+                start_j = segIndex_curr(j,1)+winlen;
+                end_j = segIndex_curr(j,2)-winlen;
+                seg_j = x(start_j:end_j,k+offsetCluster);
+                common_len = min(size(seg_i,1),size(seg_j,1));
+                
+                % Constant inital offset removed if original trace value used
+                incConst = 1;
+                if offsetCluster ~= 0
+                    incConst = 0;
+                end
+                
+                % Compute DTW-Comparison for shortened, at END aligned signals
+                sim_index_end = computeComparison(seg_i((end-common_len+1):end,1)-seg_i(end,1)*incConst,seg_j((end-common_len+1):end,1)-seg_j(end,1)*incConst);
+                
+                % Compute DTW-Comparison for shortened, at START aligned signals
+                sim_index_start = computeComparison(seg_i(1:common_len,1)-seg_i(1,1)*incConst,seg_j(1:common_len,1)-seg_j(1,1)*incConst);
+
+                % Select the better similarity index and save it in
+                % symmetrical extended matrix
+                if (sim_index_start <= sim_index_end)
+                    combined_curr(i,j) = sim_index_start;
+                    combined_curr(j,i) = sim_index_start;
+                else
+                    combined_curr(i,j) = sim_index_end;
+                    combined_curr(j,i) = sim_index_end;
+                end
+            end
+        end
+        % Add matrix of current variable to general matrix
+        combined_metric(k,1) = {combined_curr};
+    end
+
+end
+
+%% Functions related to clustering
+
 function [clusters,alreadyClustered] = FnDecideSimilar(i,j,clusters,alreadyClustered, combined_metric, thres)
+% FnDecideSimilar decides if two segments are similar and updates the
+% clusters if this is the case
     similar = true;
-    sum_metric = 0;
+    
+    % Segments are not similar, thus they should not be in the same cluster
     if(combined_metric(i,j) > thres)
         similar = false;
     end
-    sum_metric = sum_metric + combined_metric(i,j); %relict from global approach
-    if(similar && (alreadyClustered(j,1) == 0 || alreadyClustered(j,2) > sum_metric))
+
+    % Segments are similar and they are similar at highest confidence level
+    % analyzed up till now (thus lowest similarity index up till now)
+    if(similar && (alreadyClustered(j,1) == 0 || alreadyClustered(j,2) > combined_metric(i,j)))
+        % Second segment was clustered before, but at a lower confidence level
+        % => remove it from previous cluster (these clusters will be merged over time)
         if(alreadyClustered(j,1) ~= 0)
             clusters(alreadyClustered(j,1)) = {setdiff(cell2mat(clusters(alreadyClustered(j,1))),j)};
         end
+        % First segment was clustered before => add second segment to the 
+        % cluster of the first segment
         if(alreadyClustered(i,1) ~= 0)
             clusters(alreadyClustered(i,1)) = {union(cell2mat(clusters(alreadyClustered(i,1))),j)};
             alreadyClustered(j,1) = alreadyClustered(i,1);
+        % First segment was not clustered before => create new cluster with id i
         else
             clusters(i) = {union(cell2mat(clusters(i)),j)};
             alreadyClustered(j,1) = i;
         end
+        % Save confidence level for later comparisons
         if(i ~= j)
-            alreadyClustered(j,2) = sum_metric;
+            alreadyClustered(j,2) = combined_metric(i,j);
         end
     end
 end
 
-%chpoints maybe not best name, segments would be better
+% Carried over from HAutLearn with minor modifications as this function
+% should only provide the result similar or not
 function result = FnDecideSimilarLMI(xseg1,udseg1,xsegj,udsegj)  
     global sigma winlen;
        
@@ -328,5 +251,154 @@ function result = FnDecideSimilarLMI(xseg1,udseg1,xsegj,udsegj)
     else
         result = false;
         return
+    end
+end
+
+function cluster_global = refineClustersLMI(x,cluster_global,segIndex)
+% refineClustersLMI checks all cluster pairs for similarity using an
+% LMI-based approach and merges them if they are similar
+%   Currently the segment which occurs first and is associated with that
+%   cluster id is used for the LMI comparison
+    global num_var winlen offsetCluster windowSize
+
+    labels_num = unique(cluster_global(:,1));
+    progress_cnt = 1;
+
+    % Check for each cluster pair if they are similar, first entry
+    for i=labels_num'
+        % Select segment which is part of first cluster (more advanced selection?)
+        posi = find(cluster_global == i,1);
+        % Check if cluster still existent or if it was already merged
+        if(isempty(posi))
+            continue;
+        end
+        start_i = segIndex(posi,1)+winlen;
+        end_i = segIndex(posi,2)-winlen;
+        % Global clustering only possible if segment long enough (tune factor?)
+        if(end_i-start_i-1 < 3 * windowSize)
+            continue;
+        end
+        % Consider derivatives up to selected degree as done in pure LMI approach
+        seg_i = x(start_i:end_i,1:(num_var+offsetCluster*num_var));
+
+        % Check for each cluster pair if they are similar, second entry
+        for j=setdiff(labels_num',labels_num(1:i)')
+            disp([int2str(progress_cnt),'/', int2str((length(labels_num)^2-length(labels_num))/2)])
+            progress_cnt = progress_cnt + 1;
+            % Select segment which is part of second cluster (more advanced selection?)
+            posj = find(cluster_global == j,1);
+            % Check if cluster still existent or if it was already merged
+            if(isempty(posj))
+                continue;
+            end
+            start_j = segIndex(posj,1)+winlen;
+            end_j = segIndex(posj,2)-winlen;
+            % Global clustering only possible if segment long enough (tune factor?)
+            if(end_j-start_j-1 < 3 * windowSize)
+                continue;
+            end
+            % Consider derivatives up to selected degree as done in pure LMI approach
+            seg_j = x(start_j:end_j,1:(num_var*(offsetCluster+1)));
+
+            % If clusters are similar, merge them
+            res = FnDecideSimilarLMI(seg_i',[],seg_j',[]);
+            if(res)
+                posk = find(cluster_global == j);
+                cluster_global(posk,1) = i;
+            end
+        end
+    end
+end
+
+function [cluster_global, trace] = computeClusters(x,trace, combined_metric, segIndex, segIndex_var)
+% computeClusters returns clusters computed using the similarity matrix with
+% an threshold-based approach with dynamically computed thresholds
+%   At first, clusters are computed on each output variable and then merged
+%   to global clusters by considering combinations of the local clusters.
+    global num_var thresClusterMin thresClusterMax useLMIrefine facThres
+    % Extend trace data structure to save sequence of clusters for each var 
+    for i=1:length(trace)
+        trace(i).labels_trace_per_var = cell(num_var,1);
+    end
+
+    % Carry out clustering on each output variable using the corresponding
+    % set of local changepoints
+    cluster_segs = cell(num_var,1);
+    for k = 1:num_var
+        segIndex_curr = cell2mat(segIndex_var(k,1));
+        clusters = cell(size(segIndex_curr,1),1);
+        alreadyClustered = zeros(size(segIndex_curr,1),2);
+        for i = 1:size(segIndex_curr,1)
+            % Due to assumed sequential behavior of HA, at least one other
+            % segment is similar, thus threshold computed based on it
+            thres = facThres*min(combined_metric{k,1}(i,union(1:(i-1),(i+1):end)));
+            % But threshold limited to an interval
+            if(thres < thresClusterMin)
+                thres = thresClusterMin;
+            elseif(thres > thresClusterMax)
+                thres = thresClusterMax;
+            end
+            % Go over all segments and if it is similar, add it to the corresponding cluster
+            for j = i:size(segIndex_curr,1)
+                [clusters,alreadyClustered] = FnDecideSimilar(i,j,clusters,alreadyClustered, cell2mat(combined_metric(k)), thres);
+            end
+        end
+
+        % Convert representation from cluster_id -> segment_id to
+        % segment_id -> cluster_id (Already done with alreadyClustered?)
+        cluster_curr = zeros(size(segIndex_curr,1),1);
+        for i = 1:size(segIndex_curr,1)
+            cluster = cell2mat(clusters(i));
+            for j =1:size(cluster,2)
+                cluster_curr(cluster(j)) = i;
+            end
+        end
+        cluster_segs(k,1) = {cluster_curr};
+
+        % Add local clusters to trace data structure 
+        for i=1:length(trace)
+            chpoints_var = cell2mat(trace(i).chpoints_per_var(k,1));
+            len_segs = length(chpoints_var)-1;
+            trace(i).labels_trace_per_var(k,1) = {cluster_curr(1:len_segs,1)};
+            cluster_curr(1:len_segs,:) = [];
+        end
+    end
+
+    % Merge combination of local cluster id to single global cluster id by
+    % utilizing a map
+    indices = ones(num_var,1);
+    nextid = 1;
+    cluster_global = zeros(size(segIndex,1),1);
+    M = containers.Map('KeyType','char','ValueType','double');
+    % Iterate over all present global segments
+    for i=1:size(segIndex,1)
+        % Create key of current global segments for map as concatenation of 
+        % all corresponding local cluster ids seperated by dashs
+        key = '';
+        for k = 1:num_var
+            if(k ~= 1)
+                key = [key '-'];
+            end
+            cluster_curr = cell2mat(cluster_segs(k,1));
+            key = [key num2str(cluster_curr(indices(k,1),1))];
+            seg_curr = cell2mat(segIndex_var(k,1));
+            % If for next global segment the next local segment needs to be
+            % considered, update the corresponding local index
+            if(segIndex(i,2) == seg_curr(indices(k,1),2))
+                indices(k,1) = indices(k,1) + 1;
+            end
+        end
+        % If key is not part of map, add the key to the map
+        if(isKey(M,key) == 0)
+            M(key) = nextid;
+            nextid = nextid + 1;
+        end
+        % Save global cluster id of currently considered global cluster
+        cluster_global(i,1) = M(key);
+    end
+
+    %Use LMI to possibly merge incorrectly split-up clusters
+    if (useLMIrefine)
+        cluster_global = refineClustersLMI(x,cluster_global,segIndex);
     end
 end
