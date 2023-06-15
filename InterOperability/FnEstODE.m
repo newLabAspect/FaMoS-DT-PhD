@@ -35,14 +35,14 @@ for label = 1:len_labels
                 dA = A_Bu(:,1:num_vars);
                 dB = zeros(size(A_Bu,1),1);
                 % -1 indicate the ode is descrete and is used for variable reset
-                ode(label) = {[padarray(dA,[max_num_var-num_vars max_num_var-num_vars],0,'post'), padarray(dB,[max_num_var-num_vars],0,'post'), -ones(num_vars,1)]};
+                ode(label) = {[fillToSize(dA,[max_num_var max_num_var]), fillToSize(dB,[max_num_var 1]), -ones(num_vars,1)]};
             %b is estimated
             else
                 A_Bu = mrdivide(x_seg_plus,[x_seg;ud_seg]);
                 dA = A_Bu(:,1:num_vars);
                 dB = A_Bu(:,num_vars+1:end);
                 % -1 indicate the ode is descrete and is used for variable reset
-                ode(label) = {[padarray(dA,[max_num_var-num_vars max_num_var-num_vars],0,'post'), padarray(dB,[max_num_var-num_vars],0,'post'), -ones(num_vars,1)]};
+                ode(label) = {[fillToSize(dA,[max_num_var max_num_var]), fillToSize(dB,[max_num_var 1]), -ones(num_vars,1)]};
             end
             return
         end
@@ -59,7 +59,7 @@ for label = 1:len_labels
             catch
                 continue; %try with less derivatives included
             end
-            ode(label) = {[padarray(sysc.A,[max_num_var-num_vars max_num_var-num_vars],0,'post'), padarray(sysc.B,[max_num_var-num_vars],0,'post')]};
+            ode(label) = {[fillToSize(sysc.A,[max_num_var max_num_var]), fillToSize(sysc.B,[max_num_var 1])]};
             break; %ode found
         %b is estimated
         else
@@ -73,8 +73,14 @@ for label = 1:len_labels
             catch
                 continue; %try with a less derivatives included
             end
-            ode(label) = {[padarray(sysc.A,[max_num_var-num_vars max_num_var-num_vars],0,'post'), padarray(sysc.B,[max_num_var-num_vars],0,'post')]};
+            ode(label) = {[fillToSize(sysc.A,[max_num_var max_num_var]), fillToSize(sysc.B,[max_num_var 1])]};
             break; %ode found
         end
     end
+end
+end
+
+function A_new = fillToSize(A,len)
+    A_new = zeros(len);
+    A_new(1:size(A,1),1:size(A,2)) = A;
 end
