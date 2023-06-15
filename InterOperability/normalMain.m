@@ -8,6 +8,7 @@ function [correct,false,t_cluster,t_train] = normalMain(allData,evalData,folder)
     addpath(folder);
     % Changepoint Detection only done by proposed algorithm
     addpath(['ProposedAlgorithm', filesep, 'src']);
+    addpath(['HAutLearn', filesep, 'src']);
     
     %% Changepoint determination and trace setup
     normalization = zeros(num_var,1); % obviously not ideal but works
@@ -19,17 +20,7 @@ function [correct,false,t_cluster,t_train] = normalMain(allData,evalData,folder)
     end
     for i = allData
         load(['training', int2str(i),'.mat']);
-        for j = 1:num_var
-            xout(:,j) = 1/normalization(j,1) * xout(:,j);
-        end
-        for deriv = 1:max_deriv
-            for curr_var = 1:num_var
-                pos_last_deriv = (deriv-1)*num_var + curr_var;
-                xout = [xout, [zeros(deriv,1) ; 1/Ts*diff(xout((deriv):end,pos_last_deriv))]];
-            end
-        end
-        %strip info from front bc derivs are not available there
-        xout = xout((max_deriv+1):end,:);
+        xout = FnNormAndDiff(xout,normalization);
         trace_temp = FnDetectChangePoints(xout, num_var);
         trace(num) = trace_temp;
         %all traces are appended (needed for clustering in that form)
@@ -40,39 +31,25 @@ function [correct,false,t_cluster,t_train] = normalMain(allData,evalData,folder)
     
     %% Determine clustered trace segments
     
-    % Remove algo from path due to possible name collisions
-    rmpath(['ProposedAlgorithm', filesep, 'src']);
+    tic;
+
     % Choose which algorithm to use for clustering
     if(methodCluster == 0) % Use DTW for clustering
-        addpath(['ProposedAlgorithm', filesep, 'src']);
         useLMIrefine = 0;
+        trace = FnClusterSegsFast(trace, x, ud);
     elseif(methodCluster == 1) % Use DTW refined by LMIs for clustering
-        addpath(['ProposedAlgorithm', filesep, 'src']);
         useLMIrefine = 1;
+        trace = FnClusterSegsFast(trace, x, ud);
     else % Use LMIs for clustering
-        addpath(['HAutLearn', filesep, 'src']);
+        trace = FnClusterSegs(trace, x, ud);
     end
-
-    tic;
-    %change num_var so that derivs are also used (only needed for LMIs)
-    num_var = num_var * (1 + 0);
-    trace = FnClusterSegs(trace, x, ud);
-    %change back, just in case
-    num_var = num_var / (1 + 0);
     
     t_cluster = toc;
     
     %% Training and short Eval
     
-    % Remove algo from path due to possible name collisions
-    if (methodCluster == 0 || methodCluster == 1)
-        rmpath(['ProposedAlgorithm', filesep, 'src']);
-    else
-        rmpath(['HAutLearn', filesep, 'src']);
-    end
     % Choose which algorithm to use for training
     if(methodTraining == 0) % Use DTL for training
-        addpath(['ProposedAlgorithm', filesep, 'src']);
         %legacy eval paras
         N = 1; % how many past states should be used to predict
         
@@ -113,10 +90,8 @@ function [correct,false,t_cluster,t_train] = normalMain(allData,evalData,folder)
                 %disp([mat2str((i+N)*fixedIntervalLength),' in: ',mat2str(Xe(i,:)),' real: ',mat2str(Ye(i,:)),' predict: ',mat2str(predict(Mdl,Xe(i,:)))]);
             end
         end
-        rmpath(['ProposedAlgorithm', filesep, 'src']);
     else % Use PTA for training
         global eta lambda gamma tolLI
-        addpath(['HAutLearn', filesep, 'src']);
 
         for n =1:length(trace)
             trace(n).labels_trace = [trace(n).labels_trace;0];
@@ -139,11 +114,8 @@ function [correct,false,t_cluster,t_train] = normalMain(allData,evalData,folder)
 
         xmlstruct = readstruct([folder, filesep, 'automata_learning.xml']);
         
-        [correct,false] = FnEvaluate(trace(evalData),xmlstruct,ode,tolLI);
-        
-        rmpath(['HAutLearn', filesep, 'src']);
+        [correct,false] = FnEvaluateHA(trace(evalData),xmlstruct,ode,tolLI);
     end
-    rmpath(folder);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

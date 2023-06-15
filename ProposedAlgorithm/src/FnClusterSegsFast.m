@@ -1,6 +1,6 @@
-function trace = FnClusterSegs(trace, x, ud)
-% FnClusterSegs computes the clusters of the trace using DTW-comparisons and
-% uses LMI-comparisons to refine the results if selected
+function trace = FnClusterSegsFast(trace, x, ud)
+% FnClusterSegsFast computes the clusters of the trace using DTW-comparisons 
+% and uses LMI-comparisons to refine the results if selected
 
     % Compute local and global segments from chpoints in trace datastructure
     [segIndex, segIndex_var] = computeSegments(trace);

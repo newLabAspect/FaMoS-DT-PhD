@@ -8,6 +8,7 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
     addpath(folder);
     % Changepoint Detection only done by proposed algorithm
     addpath(['ProposedAlgorithm', filesep, 'src']);
+    addpath(['HAutLearn', filesep, 'src']);
     
     %% Changepoint determination and trace setup
     
@@ -39,21 +40,18 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
     
     %% Determine clustered trace segments
     
-    % Remove algo from path due to possible name collisions
-    rmpath(['ProposedAlgorithm', filesep, 'src']);
+    tic;
+
     % Choose which algorithm to use for clustering
     if(methodCluster == 0) % Use DTW for clustering
-        addpath(['ProposedAlgorithm', filesep, 'src']);
         useLMIrefine = 0;
+        trace = FnClusterSegsFast(trace, x, ud);
     elseif(methodCluster == 1) % Use DTW refined by LMIs for clustering
-        addpath(['ProposedAlgorithm', filesep, 'src']);
         useLMIrefine = 1;
+        trace = FnClusterSegsFast(trace, x, ud);
     else % Use LMIs for clustering
-        addpath(['HAutLearn', filesep, 'src']);
+        trace = FnClusterSegs(trace, x, ud);
     end
-
-    tic;
-    trace = FnClusterSegs(trace, x, ud);
     
     t_cluster = toc;
 
@@ -68,16 +66,9 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
     
     %% Training and short Eval
     
-    % Remove algo from path due to possible name collisions
-    if (methodCluster == 0 || methodCluster == 1)
-        rmpath(['ProposedAlgorithm', filesep, 'src']);
-    else
-        rmpath(['HAutLearn', filesep, 'src']);
-    end
     % Choose which algorithm to use for training
     if(methodTraining == 0) % Use DTL for training
         global precisionDTL
-        addpath(['ProposedAlgorithm', filesep, 'src']);
         %legacy eval paras
         N = 1; % how many past states should be used to predict
         
@@ -141,10 +132,8 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
             end
             disp([num2str(round(j/length(variedMetricSteps)*100,2)),' % done']);
         end
-        rmpath(['ProposedAlgorithm', filesep, 'src']);
     else % Use PTA for training
         global eta lambda gamma tolLI
-        addpath(['HAutLearn', filesep, 'src']);
 
         for n =1:length(trace)
             trace(n).labels_trace = [trace(n).labels_trace;0];
@@ -234,7 +223,7 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
 
             xmlstruct = readstruct([folder, filesep, 'automata_learning.xml']);
             
-            [correct,false] = FnEvaluate(trace(evalData),xmlstruct,ode,tolLI,label_guard);
+            [correct,false] = FnEvaluateHA(trace(evalData),xmlstruct,ode,tolLI,label_guard);
             correctAll = [correctAll; correct];
             falseAll = [falseAll; false];
             if(variedMetric == -1)
@@ -242,9 +231,7 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
             end
             disp([num2str(round(j/length(variedMetricSteps)*100,2)),' % done']);
         end
-        rmpath(['HAutLearn', filesep, 'src']);
     end
-    rmpath(folder);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

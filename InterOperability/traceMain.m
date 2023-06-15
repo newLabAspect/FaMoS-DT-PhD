@@ -8,6 +8,7 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
     addpath(folder);
     % Changepoint Detection only done by proposed algorithm
     addpath(['ProposedAlgorithm', filesep, 'src']);
+    addpath(['HAutLearn', filesep, 'src']);
     
     %% Changepoint determination and trace setup
     normalization = zeros(num_var,1); % obviously not ideal but works
@@ -19,17 +20,7 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
     end
     for i = allData
         load(['training', int2str(i),'.mat']);
-        for j = 1:num_var
-            xout(:,j) = 1/normalization(j,1) * xout(:,j);
-        end
-        for deriv = 1:max_deriv
-            for curr_var = 1:num_var
-                pos_last_deriv = (deriv-1)*num_var + curr_var;
-                xout = [xout, [zeros(deriv,1) ; 1/Ts*diff(xout((deriv):end,pos_last_deriv))]];
-            end
-        end
-        %strip info from front bc derivs are not available there
-        xout = xout((max_deriv+1):end,:);
+        xout = FnNormAndDiff(xout,normalization);
         trace_temp = FnDetectChangePoints(xout, num_var);
         trace_temp.true_states = states;
         trace_temp.true_chps = chpoints;
@@ -42,21 +33,18 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
     
     %% Determine clustered trace segments
     
-    % Remove algo from path due to possible name collisions
-    rmpath(['ProposedAlgorithm', filesep, 'src']);
+    tic;
+    
     % Choose which algorithm to use for clustering
     if(methodCluster == 0) % Use DTW for clustering
-        addpath(['ProposedAlgorithm', filesep, 'src']);
         useLMIrefine = 0;
+        trace = FnClusterSegsFast(trace, x, ud);
     elseif(methodCluster == 1) % Use DTW refined by LMIs for clustering
-        addpath(['ProposedAlgorithm', filesep, 'src']);
         useLMIrefine = 1;
+        trace = FnClusterSegsFast(trace, x, ud);
     else % Use LMIs for clustering
-        addpath(['HAutLearn', filesep, 'src']);
+        trace = FnClusterSegs(trace, x, ud);
     end
-
-    tic;
-    trace = FnClusterSegs(trace, x, ud);
     
     t_cluster = toc;
 
@@ -71,16 +59,9 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
     
     %% Training and short Eval
     
-    % Remove algo from path due to possible name collisions
-    if (methodCluster == 0 || methodCluster == 1)
-        rmpath(['ProposedAlgorithm', filesep, 'src']);
-    else
-        rmpath(['HAutLearn', filesep, 'src']);
-    end
     % Choose which algorithm to use for training
     if(methodTraining == 0) % Use DTL for training
         global precisionDTL
-        addpath(['ProposedAlgorithm', filesep, 'src']);
         %legacy eval paras
         N = 1; % how many past states should be used to predict
         
@@ -148,12 +129,10 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
         %Prediction (TODO: generalize for systems with multiple output vars)
         ode = FnEstODE(trace(setdiff(allData,evalData)));
 
-        [sim_x,sim_state] = FnPredictTrace(trace(evalData(1)),Mdl,ode);
+        [sim_x,sim_state] = FnPredictTraceDTL(trace(evalData(1)),Mdl,ode);
 
-        rmpath(['ProposedAlgorithm', filesep, 'src']);
     else % Use PTA for training
         global eta lambda gamma tolLI
-        addpath(['HAutLearn', filesep, 'src']);
 
         for n =1:length(trace)
             trace(n).labels_trace = [trace(n).labels_trace;0];
@@ -243,7 +222,7 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
 
             xmlstruct = readstruct([folder, filesep, 'automata_learning.xml']);
             
-            [correct,false,conditions] = FnEvaluate(trace(evalData),xmlstruct,ode,tolLI,label_guard);
+            [correct,false,conditions] = FnEvaluateHA(trace(evalData),xmlstruct,ode,tolLI,label_guard);
             correctAll = [correctAll; correct];
             falseAll = [falseAll; false];
             if(variedMetric == -1)
@@ -254,11 +233,8 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
 
         %Prediction (TODO: generalize for systems with multiple output vars)
 
-        [sim_x,sim_state] = FnPredictTrace(trace(evalData(1)),conditions,ode);
-
-        rmpath(['HAutLearn', filesep, 'src']);
+        [sim_x,sim_state] = FnPredictTraceHA(trace(evalData(1)),conditions,ode);
     end
-    rmpath(folder);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

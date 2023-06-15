@@ -1,4 +1,4 @@
-function [sim_x, sim_state] = FnPredictTrace(trace,conditions,ode)
+function [sim_x, sim_state] = FnPredictTraceHA(trace,conditions,ode)
     global num_var tolLI Ts
     offsetPred = 0+1;
     sim_x = trace.x(offsetPred,:);

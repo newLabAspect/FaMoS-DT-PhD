@@ -1,4 +1,4 @@
-function [sim_x, sim_state] = FnPredictTrace(trace,Mdl,ode)
+function [sim_x, sim_state] = FnPredictTraceDTL(trace,Mdl,ode)
     global fixedIntervalLength useTime num_var Ts precisionDTL
     offsetPred = 0+1;
     sim_x = trace.x(offsetPred,:);
