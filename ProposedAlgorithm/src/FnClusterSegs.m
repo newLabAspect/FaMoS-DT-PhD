@@ -350,15 +350,8 @@ function [cluster_segs, trace] = computeClustersLocal(trace, combined_metric, se
             end
         end
 
-        % Convert representation from cluster_id -> segment_id to
-        % segment_id -> cluster_id (Already done with alreadyClustered?)
-        cluster_curr = zeros(size(segIndex_curr,1),1);
-        for i = 1:size(segIndex_curr,1)
-            cluster = cell2mat(clusters(i));
-            for j =1:size(cluster,2)
-                cluster_curr(cluster(j)) = i;
-            end
-        end
+        % Convert representation from cluster_id -> segment_id to segment_id -> cluster_id
+        cluster_curr = alreadyClustered(:,1);
         cluster_segs(k,1) = {cluster_curr};
 
         % Add local clusters to trace data structure 
