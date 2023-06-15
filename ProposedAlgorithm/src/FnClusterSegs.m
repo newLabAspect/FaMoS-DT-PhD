@@ -1,7 +1,35 @@
 function trace = FnClusterSegs(trace, x, ud)
-    global num_var;
+% FnClusterSegs computes the clusters of the trace using DTW-comparisons and
+% uses LMI-comparisons to refine the results if selected
 
-    % Move this into own function?
+    % Compute local and global segments from chpoints in trace datastructure
+    [segIndex, segIndex_var] = computeSegments(trace);
+    
+    % Compute similarity matrix which is used for clustering in next step
+    combined_metric = computeSimilarityMatrix(x,segIndex_var);
+
+    % Create local clusters on each output variable
+    [cluster_segs, trace] = computeClustersLocal(trace, combined_metric, segIndex_var);
+
+    % Merge local clusters to global clusters, potentially refine with LMI
+    [cluster_global, trace] = computeClustersGlobal(x, trace, cluster_segs, segIndex, segIndex_var);
+
+    % Save global results into trace data structure
+    labels_num = unique(cluster_global(:,1));
+
+    for i=1:length(trace)
+        chpoints = (trace(i).chpoints);
+        len_segs = length(chpoints)-1;
+        trace(i).labels_num = labels_num;
+        trace(i).labels_trace = cluster_global(1:len_segs,1);
+        cluster_global(1:len_segs,:) = [];
+    end
+end
+
+function [segIndex, segIndex_var] = computeSegments(trace)
+% computeSegments returns local (per output variable) and global segments
+% based on local and global changepoints saved in trace data structure
+    global num_var
     % Include dummy entry to simplify computations
     segIndex = [0,0];
     segIndex_var = cell(num_var,1);
@@ -35,23 +63,6 @@ function trace = FnClusterSegs(trace, x, ud)
         segIndex_var_temp = cell2mat(segIndex_var(j,1));
         segIndex_var_temp(1,:) = [];
         segIndex_var(j,1) = {segIndex_var_temp};
-    end
-    
-    % Compute similarity matrix which is used for clustering in next step
-    combined_metric = computeSimilarityMatrix(x,segIndex_var);
-
-    % Create local clusters that are merged to get global clusters
-    [cluster_global, trace] = computeClusters(x,trace, combined_metric, segIndex, segIndex_var);
-
-    % Save global results into trace data structure
-    labels_num = unique(cluster_global(:,1));
-
-    for i=1:length(trace)
-        chpoints = (trace(i).chpoints);
-        len_segs = length(chpoints)-1;
-        trace(i).labels_num = labels_num;
-        trace(i).labels_trace = cluster_global(1:len_segs,1);
-        cluster_global(1:len_segs,:) = [];
     end
 end
 
@@ -171,7 +182,7 @@ end
 % Carried over from HAutLearn with minor modifications as this function
 % should only provide the result similar or not
 function result = FnDecideSimilarLMI(xseg1,udseg1,xsegj,udsegj)  
-    global sigma winlen;
+    global sigma winlen
        
     %variable number
     num_var = size(xseg1,1);
@@ -285,19 +296,16 @@ function cluster_global = refineClustersLMI(x,cluster_global,segIndex)
         for j=setdiff(labels_num',labels_num(1:i)')
             disp([int2str(progress_cnt),'/', int2str((length(labels_num)^2-length(labels_num))/2)])
             progress_cnt = progress_cnt + 1;
-            % Select segment which is part of second cluster (more advanced selection?)
+            % Extract seg_j analog to seg_i before
             posj = find(cluster_global == j,1);
-            % Check if cluster still existent or if it was already merged
             if(isempty(posj))
                 continue;
             end
             start_j = segIndex(posj,1)+winlen;
             end_j = segIndex(posj,2)-winlen;
-            % Global clustering only possible if segment long enough (tune factor?)
             if(end_j-start_j-1 < 3 * windowSize)
                 continue;
             end
-            % Consider derivatives up to selected degree as done in pure LMI approach
             seg_j = x(start_j:end_j,1:(num_var*(offsetCluster+1)));
 
             % If clusters are similar, merge them
@@ -310,12 +318,10 @@ function cluster_global = refineClustersLMI(x,cluster_global,segIndex)
     end
 end
 
-function [cluster_global, trace] = computeClusters(x,trace, combined_metric, segIndex, segIndex_var)
-% computeClusters returns clusters computed using the similarity matrix with
-% an threshold-based approach with dynamically computed thresholds
-%   At first, clusters are computed on each output variable and then merged
-%   to global clusters by considering combinations of the local clusters.
-    global num_var thresClusterMin thresClusterMax useLMIrefine facThres
+function [cluster_segs, trace] = computeClustersLocal(trace, combined_metric, segIndex_var)
+% computeClustersLocal returns clusters computed on each output variable using the 
+% similarity matrix with an threshold-based approach with dynamically computed thresholds
+    global num_var thresClusterMin thresClusterMax facThres
     % Extend trace data structure to save sequence of clusters for each var 
     for i=1:length(trace)
         trace(i).labels_trace_per_var = cell(num_var,1);
@@ -363,7 +369,12 @@ function [cluster_global, trace] = computeClusters(x,trace, combined_metric, seg
             cluster_curr(1:len_segs,:) = [];
         end
     end
+end
 
+function [cluster_global, trace] = computeClustersGlobal(x,trace, cluster_segs, segIndex, segIndex_var)
+% computeClustersGlobal returns global clusters by merging local clusters
+% to global clusters by considering all occuring combinations of local cluster ids.
+    global num_var useLMIrefine
     % Merge combination of local cluster id to single global cluster id by
     % utilizing a map
     indices = ones(num_var,1);
