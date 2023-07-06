@@ -87,7 +87,7 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
             Ye = [];
             
             for i = evalData
-                [Xnew,Ynew,states] = FnTraceToTrainingData(trace(i),N);
+                [Xnew,Ynew,states] = FnTraceToTrainingData(trace(i));
                 Xe = [Xe; Xnew];
                 Ye = [Ye; Ynew];
             end
@@ -98,7 +98,7 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
             Y = [];
             count = 1;
             for i = setdiff(allData,evalData)
-                [Xnew,Ynew,states] = FnTraceToTrainingData(trace(count),N);
+                [Xnew,Ynew,states] = FnTraceToTrainingData(trace(count));
                 X = [X; Xnew];
                 Y = [Y; Ynew];
                 count= count + 1;

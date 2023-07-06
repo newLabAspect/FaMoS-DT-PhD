@@ -1,6 +1,7 @@
 function [Mdl,impure_leaves,num_nodes,learn_time] = FnBuildDT(X,Y)
-%FNBUILDDT Summary of this function goes here
-%   Detailed explanation goes here
+%FnBuildDT trains a DT using feature vectors provided by X and classifiers
+%provided by Y
+
     tic
     Mdl = fitctree(X,Y,'CategoricalPredictors','all','MinParentSize',1);
     learn_time = toc;
