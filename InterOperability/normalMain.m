@@ -114,7 +114,8 @@ function [correct,false,t_cluster,t_train] = normalMain(allData,evalData,folder)
 
         xmlstruct = readstruct([folder, filesep, 'automata_learning.xml']);
         
-        [correct,false] = FnEvaluateHA(trace(evalData),xmlstruct,ode,tolLI);
+        conditions = FnParseHA(xmlstruct,ode,label_guard);
+        [correct,false] = FnEvaluateHA(trace(evalData),conditions,tolLI);
     end
 end
 

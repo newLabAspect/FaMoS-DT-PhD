@@ -44,7 +44,7 @@ function [sim_x, sim_state] = FnPredictTraceHA(trace,conditions,ode)
                 for k = 1:num_var
                     overall_sum = overall_sum + new_x(k,1) * condition(1,2+k);
                 end
-                % Considered condition holds => switch states
+                % Considered condition holds, thus switch states
                 if((overall_sum < tolLI && condition(1,2+num_var+1) == -1) || ...
                    (overall_sum > -tolLI && condition(1,2+num_var+1) == +1))
                     curr_state = condition(1,2);

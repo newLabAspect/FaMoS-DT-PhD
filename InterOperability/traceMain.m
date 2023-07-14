@@ -222,7 +222,8 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
 
             xmlstruct = readstruct([folder, filesep, 'automata_learning.xml']);
             
-            [correct,false,conditions] = FnEvaluateHA(trace(evalData),xmlstruct,ode,tolLI,label_guard);
+            conditions = FnParseHA(xmlstruct,ode,label_guard);
+            [correct,false] = FnEvaluateHA(trace(evalData),conditions,tolLI);
             correctAll = [correctAll; correct];
             falseAll = [falseAll; false];
             if(variedMetric == -1)
