@@ -14,39 +14,37 @@ Ts = 0.01; Time = false;
 windowSize = 10; max_deriv = 3;
 % Up to which derivative to consider in LMI, Automata Learning
 % On which derivative to cluster using DTW comparisons
-offsetCluster = 0;
+offsetCluster = 1;
 
 %% Clustering Paras
 % LMI paras (can comment out if only DTW used)
 global sigma winlen
-sigma = 0.0015;  winlen=5; % LMI paras
+sigma = 0.000001;  winlen=1; % LMI paras
 % DTW paras (can comment out if only LMIs used)
 global thresClusterMax thresClusterMin facThres
 thresClusterMax = 0.1; thresClusterMin = 0.01; facThres = 2.5;
-% Slightly Off Paras
-%thresClusterMax = 0.2; thresClusterMin = 0.00009; facThres = 10.0;
 
 %% Training Paras
 % PTA paras (can comment out if DTL is used)
 global eta lambda gamma tolLI
 eta = 100000; % number of iterations 
 lambda = 0.1; % tolerance 
-gamma = 10; %the least number of inlayers
-tolLI = 0.0027; %tolerance in evaluation of LIs
+gamma = 3; %the least number of inlayers
+tolLI = 0.00272; %tolerance in evaluation of LIs
 % DTL paras (can comment out if PTA is used)
 global fixedIntervalLength precisionDTL useTime
-fixedIntervalLength = 1; precisionDTL = 0.0003; useTime = false;
+fixedIntervalLength = 1; precisionDTL = 0.001; useTime = true;
 
 %% Vary Paras over time
 global variedMetric variedMetricSteps
-variedMetric = 4; % -1: No parameter is varied
+variedMetric = -1; % -1: No parameter is varied
 %DTL: 0: precisionDTL 1: trainingSetSize
 %PTA: 0: eta 1: lambda 2: gamma 3: toLi 4: trainingSetSize (for low number
 %gamma needs to be lowered otherwise LIs cannot be computed)
-variedMetricSteps = linspace(0.3,0.3,1);
+variedMetricSteps = linspace(0.3,1.0,8);
 
 %% Actual execution
-allData = 1:10;
-evalData = [2,8];
+allData = 1:6;
+evalData = [2,6];
 
-[correct,false,t_cluster,t_train,trace,ClusterCorrect,ClusterFalse,pred_x] = traceMain(allData,evalData,['ExampleSystems', filesep, 'SimpleHeatingSystem']);
+[correct,false,t_cluster,t_train,trace,ClusterCorrect,ClusterFalse,pred_x] = traceMain(allData,evalData,['ExampleSystems', filesep, 'ThreeStateHybridAutomaton']);

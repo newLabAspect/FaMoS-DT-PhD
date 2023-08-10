@@ -20,6 +20,8 @@ function [sim_x, sim_state] = FnPredictTraceDTL(trace,Mdl,ode)
         % Predict next data point based on ODE
         A = cell2mat(ode(curr_state));
         A = A(1:size(A,1),1:size(A,1));
+        % Remove zero rows/columns only needed for earlier HAutLearn compability
+        A = shrinkMatrix(A); 
         curr_x = sim_x(i-1,1:size(A,1))';
         new_x_dot = A * curr_x;
         % Assume: First rows of A represent integration, thus leave out
@@ -46,4 +48,16 @@ function [sim_x, sim_state] = FnPredictTraceDTL(trace,Mdl,ode)
             lastSwitch = i;
         end
     end
+end
+
+function A_new = shrinkMatrix(A)
+% sprinkMatrix reduces the matrix A to the minimal quadratic size by
+% deleting zero columns and rows
+    
+    % Find all non-zero entries
+    [row,col] = find(A);
+    % Determine minimal quadratic size
+    len = max(max(row),max(col));
+    % Return result
+    A_new = A(1:len,1:len);
 end
