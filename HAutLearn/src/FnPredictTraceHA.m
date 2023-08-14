@@ -15,23 +15,32 @@ function [sim_x, sim_state] = FnPredictTraceHA(trace,conditions,ode)
     sim_state(1,1) = trace.labels_trace(indxLastSwitch,1);
     curr_state = trace.labels_trace(indxLastSwitch,1);
 
+    % Remove zero rows/columns in ODEs (needed for earlier HAutLearn compatibility)
+    for k = 1:length(ode)
+        A = cell2mat(ode(k));
+        A = shrinkMatrix(A);
+        ode(k) = {A};
+    end
+
     % Trace Prediction (of timepoint i using timepoint i-1)
     for i = (offsetPred+1):size(trace.x)
         % Predict next data point based on ODE
         A = cell2mat(ode(curr_state));
         A = A(1:size(A,1),1:size(A,1));
-        % Remove zero rows/columns only needed for earlier HAutLearn compability
-        A = shrinkMatrix(A); 
         curr_x = sim_x(i-1,1:size(A,1))';
         new_x_dot = A * curr_x;
+
         % Assume: First rows of A represent integration, thus leave out
         new_x = [curr_x(1:end,1); new_x_dot((end-num_var+1):end,1)];
         % Update all derivatives bottom-up with the rectangle integration rule
         for j = (size(new_x,1)-num_var):-1:1
             new_x(j,1) = new_x(j,1) + new_x(j+num_var,1) * Ts;
         end
-        % Pad with zeros as constant row length needed
+        % Pad with derivatives as constant row length needed
         sim_x(i,:) = [new_x', zeros(1,size(sim_x,2)-size(new_x,1))];
+        for j = (size(new_x,1)+1):size(sim_x,2)
+            sim_x(i,j) = (sim_x(i,j-num_var) - sim_x(i-1,j-num_var)) / Ts;
+        end
 
         % Predict next system mode
         sim_state(i,1) = curr_state;
