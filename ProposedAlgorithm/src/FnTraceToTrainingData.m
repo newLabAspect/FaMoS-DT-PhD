@@ -23,7 +23,7 @@ function [X,Y,states] = FnTraceToTrainingData(trace)
 
         % Save samples needed for feature vector and class label creation
         states(indx,:) = [trace.labels_trace(indxStates,1)];
-        values(indx,:) = [FnRoundToInterval(trace.x(indx,1:num_var),precisionDTL)];
+        values(indx,:) = [trace.x(indx,1:num_var)];
         timeSwitch(indx,:) = indx-lastswitch;
     end
 
