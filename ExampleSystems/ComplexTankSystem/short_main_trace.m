@@ -48,4 +48,4 @@ variedMetricSteps = linspace(0.4,0.7,31); %errors in range 0.7...0.8
 allData = 1:10;
 evalData = [2,6];
 
-[correct,false,t_cluster,t_train,trace,ClusterCorrect,ClusterFalse,pred_x] = traceMain(allData,evalData,['ExampleSystems', filesep, 'ComplexTankSystem']);
+[correct,false,t_cluster,t_train,trace,ClusterCorrect,ClusterFalse,pred_trace,confDeg] = traceMain(allData,evalData,['ExampleSystems', filesep, 'ComplexTankSystem']);

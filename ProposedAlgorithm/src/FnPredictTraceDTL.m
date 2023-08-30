@@ -1,11 +1,13 @@
-function [sim_x, sim_state] = FnPredictTraceDTL(trace,Mdl,ode)
+function [sim_trace] = FnPredictTraceDTL(trace,Mdl,ode)
 % FnPredictTraceDTL uses the DT-model of the system and inital conditions of
 % a preexisting trace to create a trace prediction
-    global useTime num_var Ts precisionDTL
+    global useTime num_var Ts
 
     % Preallocated arrays for speed
     sim_x = zeros(size(trace.x,1),size(trace.x,2));
     sim_state = zeros(size(trace.x,1),1);
+    sim_chp = [];
+    sim_labels = [];
 
     % Extract initial conditions at predefined position from trace datastructure
     offsetPred = 0+1;
@@ -47,16 +49,24 @@ function [sim_x, sim_state] = FnPredictTraceDTL(trace,Mdl,ode)
         last_state = curr_state;
         % Construct feature vector for timepoint i-1
         if (useTime)
-            curr_state = predict(Mdl,[last_state FnRoundToInterval(curr_x(1:num_var,1)',precisionDTL) (i-1)-lastSwitch]); 
+            curr_state = predict(Mdl,[last_state curr_x(1:num_var,1)' (i-1)-lastSwitch]); 
         else
-            curr_state = predict(Mdl,[last_state FnRoundToInterval(curr_x(1:num_var,1)',precisionDTL)]);
+            curr_state = predict(Mdl,[last_state curr_x(1:num_var,1)']);
         end
 
         % Track if state has changed (needed to compute time since last switch)
         if(last_state ~= curr_state)
             lastSwitch = i;
+            sim_chp = [sim_chp; i]; % maybe i+1 or i-1 
+            sim_labels = [sim_labels; last_state];
         end
     end
+
+    % Create trace data structure
+    sim_trace.x = sim_x;
+    sim_trace.chpoints = [1; sim_chp; length(sim_x)];
+    sim_trace.labels_trace = sim_labels;
+    sim_trace.labels_num = unique(sim_labels);
 end
 
 function A_new = shrinkMatrix(A)

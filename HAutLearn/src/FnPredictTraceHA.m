@@ -1,4 +1,4 @@
-function [sim_x, sim_state] = FnPredictTraceHA(trace,conditions,ode)
+function [sim_trace] = FnPredictTraceHA(trace,conditions,ode)
 % FnPredictTraceDTL uses the HA-model of the system and inital conditions of
 % a preexisting trace to create a trace prediction
     global num_var tolLI Ts
@@ -6,6 +6,8 @@ function [sim_x, sim_state] = FnPredictTraceHA(trace,conditions,ode)
     % Preallocated arrays for speed
     sim_x = zeros(size(trace.x,1),size(trace.x,2));
     sim_state = zeros(size(trace.x,1),1);
+    sim_chp = [];
+    sim_labels = [];
 
     % Extract initial conditions at predefined position from trace datastructure
     offsetPred = 0+1;
@@ -67,8 +69,16 @@ function [sim_x, sim_state] = FnPredictTraceHA(trace,conditions,ode)
         % Track if state has changed (needed to compute time since last switch)
         if(last_state ~= curr_state)
             lastSwitch = i;
+            sim_chp = [sim_chp; i]; % maybe i+1 or i-1
+            sim_labels = [sim_labels; last_state];
         end
     end
+
+    % Create trace data structure
+    sim_trace.x = sim_x;
+    sim_trace.chpoints = [1; sim_chp; length(sim_x)];
+    sim_trace.labels_trace = sim_labels;
+    sim_trace.labels_num = unique(sim_labels);
 end
 
 function A_new = shrinkMatrix(A)

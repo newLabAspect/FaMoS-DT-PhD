@@ -48,4 +48,4 @@ variedMetricSteps = linspace(0.23,1.0,78);
 allData = 1:10;
 evalData = [2,8];
 
-[correct,false,t_cluster,t_train,trace,ClusterCorrect,ClusterFalse,pred_x] = traceMain(allData,evalData,['ExampleSystems', filesep, 'BuckConverter']);
+[correct,false,t_cluster,t_train,trace,ClusterCorrect,ClusterFalse,pred_trace,confDeg] = traceMain(allData,evalData,['ExampleSystems', filesep, 'BuckConverter']);

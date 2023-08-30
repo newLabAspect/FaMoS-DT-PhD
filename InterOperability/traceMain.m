@@ -1,4 +1,4 @@
-function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFalse,sim_x] = traceMain(allData,evalData,folder)
+function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFalse,sim_trace,confDeg] = traceMain(allData,evalData,folder)
     %only global vars needed for this top level program are listed here, if 
     %needed in subfunctions they are listed only there for simplicity
     global num_var num_ud Ts max_deriv useLMIrefine methodCluster methodTraining variedMetricSteps variedMetric offsetCluster
@@ -129,7 +129,7 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
         %Prediction (TODO: generalize for systems with multiple output vars)
         ode = FnEstODE(trace(setdiff(allData,evalData)));
 
-        [sim_x,sim_state] = FnPredictTraceDTL(trace(evalData(1)),Mdl,ode);
+        [sim_trace] = FnPredictTraceDTL(trace(evalData(1)),Mdl,ode);
 
     else % Use PTA for training
         global eta lambda gamma tolLI
@@ -234,8 +234,10 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
 
         %Prediction (TODO: generalize for systems with multiple output vars)
 
-        [sim_x,sim_state] = FnPredictTraceHA(trace(evalData(1)),conditions,ode);
+        [sim_trace] = FnPredictTraceHA(trace(evalData(1)),conditions,ode);
     end
+
+    [confDeg] = FnConformanceTrace(trace(evalData(1)),sim_trace);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
