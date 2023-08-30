@@ -1,33 +1,39 @@
-function trace = FnDetectChangePoints(xout, num_var)
+function trace = FnDetectChangePoints(xout, udout)
 % FnDetectChangePoints returns local and global changepoints present in xout
 %   A sliding window approach, utilizing the euclidean distance between
 %   the immediate past and immediate future to detect changes in dynamic
 %   behavior on all derivatives, is used
-    global max_deriv chp_depths
+    global num_var num_ud max_deriv chp_depths
     warning('off','signal:findpeaks:largeMinPeakHeight');
 
     chpoints = []; % Global changepoints
     chp_depths = zeros(max_deriv+1,1); % Purely for debugging
-    chp_var = cell(num_var,1); % Local changepoints (per output variable)
+    chp_var = cell(num_var+num_ud,1); % Local changepoints (per variable)
     for i = 1:num_var
         % Find changepoints on i'th trace incl. derivatives
-        new_chp = findChangePoints(xout(:,i:num_var:end),0,1,size(xout,1));
+        new_chp = findChangePoints(xout(:,i:num_var:end),0,1,size(xout,1),max_deriv);
         % Add newly discovered changepoints to global set of changepoints
         chpoints = union(chpoints, new_chp);
         % Add newly discovered changepoints to local set of changepoints
         % (one set per output variable)
         chp_var(i) = {new_chp};
     end
+    % Repeat for input variables but only on original trace
+    for i = 1:num_ud
+        new_chp = findChangePoints(udout(:,i),0,1,size(udout,1),0);
+        chpoints = union(chpoints, new_chp);
+        chp_var(num_var+i) = {new_chp};
+    end
     
     % Filter changepoints given e.g. close proximity while keeping entries
     % in global and local changepoint set consistent
-    [xout,chpoints,chp_var] = filterChangePoints(xout, chpoints, chp_var);
+    [xout,udout,chpoints,chp_var] = filterChangePoints(xout, udout, chpoints, chp_var);
 
     % Create trace datastructure
     trace.x = xout;
     trace.chpoints = chpoints;
     trace.chpoints_per_var = chp_var;
-    trace.ud = [];
+    trace.ud = udout;
     trace.labels_num = []; 
     trace.labels_trace = [];  
 end
@@ -49,7 +55,7 @@ function dist = computeDistance(der)
     end
 end
 
-function locs = findChangePoints(xout,depth,starting,ending)
+function locs = findChangePoints(xout,depth,starting,ending,max_depth)
 % findChangePoints returns changepoints present in an interval using all
 % available derivatives up to the selected one
 %   The search is realized recursively: Terminal cases are if the interval
@@ -57,11 +63,11 @@ function locs = findChangePoints(xout,depth,starting,ending)
 %   changepoints are detected on the selected derivative and used to
 %   formulate new intervals which are examined in the next recursion with
 %   the next derivative. All collected changepoints are merged to one set.
-    global windowSize max_deriv chp_depths
+    global windowSize chp_depths
 
     % Check for terminal cases 
     locs = [];
-    if depth > max_deriv || ending-starting-1 < 2*windowSize
+    if depth > max_depth || ending-starting-1 < 2*windowSize
         return;
     end
 
@@ -84,7 +90,7 @@ function locs = findChangePoints(xout,depth,starting,ending)
     for i = 1:(length(locsHere)-1)
         newStart = (locsHere(i)+windowSize/2);
         newEnd = (locsHere(i+1)-windowSize/2);
-        locsNew = findChangePoints(xout,depth+1,newStart,newEnd);
+        locsNew = findChangePoints(xout,depth+1,newStart,newEnd,max_depth);
         if(size(locsNew,1) ~= 0)
             locs = [locs; locsNew(:,1)];
         end
@@ -97,22 +103,25 @@ function locs = findChangePoints(xout,depth,starting,ending)
     end
 end
 
-function [xout,chpoints,chp_var] = filterChangePoints(xout, chpoints, chp_var)
+function [xout,udout,chpoints,chp_var] = filterChangePoints(xout, udout, chpoints, chp_var)
 % filterChangePoints returns xout and the local and global changepoint set
 % after applying some filtering rules
 %   Changepoints that are visible on mutliple output variables and thus 
 %   generate multiple entries in the global changepoint set are merged;
 %   short last segments are deleted; entries in local changepoint sets
 %   changed so that positions are consistent with the global set
-    global windowSize num_var
+    global windowSize num_var num_ud
     % Remove changepoints in global set that were detected on multiple output variables
     chpoints = filterindx(chpoints,windowSize);
 
     % Remove last segment if too short
     if(chpoints(end,1)-chpoints(end-1,1) < 2 * windowSize)
         xout = xout(1:chpoints(end-1,1),:);
+        if num_ud ~= 0
+            udout = udout(1:chpoints(end-1,1),:);
+        end
         chpoints = chpoints(1:(end-1),1);
-        for i = 1:num_var
+        for i = 1:(num_var+num_ud)
             current_chps = cell2mat(chp_var(i));
             % Remove last entry (the same for all output variables)
             current_chps = current_chps(1:(end-1),1);
@@ -124,7 +133,7 @@ function [xout,chpoints,chp_var] = filterChangePoints(xout, chpoints, chp_var)
 
     % Ensure that if multiple changepoints in global set are merged, the
     % same unique changepoint value will be used in local sets
-    for i = 1:num_var
+    for i = 1:(num_var+num_ud)
         current_chps = cell2mat(chp_var(i));
         % Find closest changepoint in global set (distance can be zero) and
         % use this changepoint value going forward

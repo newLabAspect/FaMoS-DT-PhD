@@ -13,20 +13,24 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
     %% Changepoint determination and trace setup
     
     % Normalize trace to [-1,+1] by computing maximum absolute trace value
-    normalization = zeros(num_var,1);
+    normalization = zeros(num_var+num_ud,1);
     for i = allData
         load(['training', int2str(i),'.mat']);
         for j = 1:num_var
             normalization(j,1) = max(normalization(j,1),max(abs(xout(:,j))));
+        end
+        for j = 1:num_ud
+            normalization(num_var+j,1) = max(normalization(num_var+j,1),max(abs(udout(:,j))));
         end
     end
 
     % Carry out normalization, compute derivatives and detect changepoints
     % Results are written into trace datastructure (incl. ground truths)
     for i = allData
+        udout = []; % Needed if system with no input variables present
         load(['training', int2str(i),'.mat']);
-        xout = FnNormAndDiff(xout,normalization);
-        trace_temp = FnDetectChangePoints(xout, num_var);
+        [xout, udout] = FnNormAndDiff(xout, udout, normalization);
+        trace_temp = FnDetectChangePoints(xout, udout);
         % Ground truths for states and changepoints
         trace_temp.true_states = states;
         trace_temp.true_chps = chpoints;

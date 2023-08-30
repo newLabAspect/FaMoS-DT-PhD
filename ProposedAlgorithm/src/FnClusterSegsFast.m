@@ -1,18 +1,21 @@
 function trace = FnClusterSegsFast(trace, x, ud)
 % FnClusterSegsFast computes the clusters of the trace using DTW-comparisons 
 % and uses LMI-comparisons to refine the results if selected
+    global num_var num_ud offsetCluster
 
     % Compute local and global segments from chpoints in trace datastructure
     [segIndex, segIndex_var] = computeSegments(trace);
     
     % Compute similarity matrix which is used for clustering in next step
-    combined_metric = computeSimilarityMatrix(x,segIndex_var);
+    combined_metric = cell(num_var+num_ud,1);
+    combined_metric(1:num_var,1) = computeSimilarityMatrix(x,segIndex_var(1:num_var,1),num_var,offsetCluster);
+    combined_metric(num_var+(1:num_ud),1) = computeSimilarityMatrix(ud,segIndex_var(num_var+(1:num_ud),1),num_ud,0);
 
     % Create local clusters on each output variable
     [cluster_segs, trace] = computeClustersLocal(trace, combined_metric, segIndex_var);
 
     % Merge local clusters to global clusters, potentially refine with LMI
-    [cluster_global, trace] = computeClustersGlobal(x, trace, cluster_segs, segIndex, segIndex_var);
+    [cluster_global, trace] = computeClustersGlobal(x, ud, trace, cluster_segs, segIndex, segIndex_var);
 
     % Save global results into trace data structure
     labels_num = unique(cluster_global(:,1));
@@ -29,11 +32,11 @@ end
 function [segIndex, segIndex_var] = computeSegments(trace)
 % computeSegments returns local (per output variable) and global segments
 % based on local and global changepoints saved in trace data structure
-    global num_var
+    global num_var num_ud
     % Include dummy entry to simplify computations
     segIndex = [0,0];
-    segIndex_var = cell(num_var,1);
-    segIndex_var(1:num_var,1) = {[0,0]};
+    segIndex_var = cell(num_var+num_ud,1);
+    segIndex_var(1:(num_var+num_ud),1) = {[0,0]};
     % Transform changepoints to segments consisting of start and end point
     for i=1:length(trace)  
         % Global segments
@@ -47,7 +50,7 @@ function [segIndex, segIndex_var] = computeSegments(trace)
 
         % Local segments (per output variable)
         chp_var = (trace(i).chpoints_per_var);
-        for j=1:num_var
+        for j=1:(num_var+num_ud)
             chp_curr = cell2mat(chp_var(j,1));
             chsegments_var = [chp_curr(1:end-1),chp_curr(2:end)];
             % Increase start by 1 as done above
@@ -59,7 +62,7 @@ function [segIndex, segIndex_var] = computeSegments(trace)
     end
     % Dummy lines are deleted (used so that first append offset is 0)
     segIndex(1,:) = [];
-    for j=1:num_var
+    for j=1:(num_var+num_ud)
         segIndex_var_temp = cell2mat(segIndex_var(j,1));
         segIndex_var_temp(1,:) = [];
         segIndex_var(j,1) = {segIndex_var_temp};
@@ -85,18 +88,18 @@ function sim = computeComparison(seg_1,seg_2)
     sim = 0.5*dist+0.5*(1-diag);
 end
 
-function combined_metric = computeSimilarityMatrix(x, segIndex_var)
+function combined_metric = computeSimilarityMatrix(x, segIndex_var, num, offset)
 % computeSimilarityMatrix returns the similarity matrix which quantifies
 % how similar each two segments are with repect to each output variable for 
 % the selected derivative
 %   The ideas to shorten the segments to a common length and carry out two
 %   comparisons - one aligned at the end and one aligned at the start - are
 %   used to compute the similarity matrix
-    global num_var winlen offsetCluster
+    global winlen
 
-    combined_metric = cell(num_var,1);
+    combined_metric = cell(num,1);
     % Comparison Metric computed for each output variable
-    for k = 1:num_var
+    for k = 1:num
         segIndex_curr = cell2mat(segIndex_var(k,1));
         combined_curr = zeros(size(segIndex_curr,1),size(segIndex_curr,1));
         % Pairwise comparison first index
@@ -105,17 +108,17 @@ function combined_metric = computeSimilarityMatrix(x, segIndex_var)
             % caused by changepoints
             start_i = segIndex_curr(i,1)+winlen;
             end_i = segIndex_curr(i,2)-winlen;
-            seg_i = x(start_i:end_i,k+offsetCluster);
+            seg_i = x(start_i:end_i,k+offset);
             % Pairwise comparison second index
             for j = i:size(segIndex_curr,1)
                 start_j = segIndex_curr(j,1)+winlen;
                 end_j = segIndex_curr(j,2)-winlen;
-                seg_j = x(start_j:end_j,k+offsetCluster);
+                seg_j = x(start_j:end_j,k+offset);
                 common_len = min(size(seg_i,1),size(seg_j,1));
                 
                 % Constant inital offset removed if original trace value used
                 incConst = 1;
-                if offsetCluster ~= 0
+                if offset ~= 0
                     incConst = 0;
                 end
                 
@@ -265,12 +268,12 @@ function result = FnDecideSimilarLMI(xseg1,udseg1,xsegj,udsegj)
     end
 end
 
-function cluster_global = refineClustersLMI(x,cluster_global,segIndex)
+function cluster_global = refineClustersLMI(x,ud,cluster_global,segIndex)
 % refineClustersLMI checks all cluster pairs for similarity using an
 % LMI-based approach and merges them if they are similar
 %   Currently the segment which occurs first and is associated with that
 %   cluster id is used for the LMI comparison
-    global num_var winlen offsetCluster windowSize
+    global num_var num_ud winlen offsetCluster windowSize
 
     labels_num = unique(cluster_global(:,1));
     progress_cnt = 1;
@@ -290,7 +293,11 @@ function cluster_global = refineClustersLMI(x,cluster_global,segIndex)
             continue;
         end
         % Consider derivatives up to selected degree as done in pure LMI approach
-        seg_i = x(start_i:end_i,1:(num_var+offsetCluster*num_var));
+        xseg_i = x(start_i:end_i,1:(num_var+offsetCluster*num_var));
+        udseg_i = [];
+        if num_ud ~= 0
+            udseg_i = ud(start_i:end_i,1:num_ud);
+        end
 
         % Check for each cluster pair if they are similar, second entry
         for j=setdiff(labels_num',labels_num(1:i)')
@@ -307,9 +314,13 @@ function cluster_global = refineClustersLMI(x,cluster_global,segIndex)
                 continue;
             end
             seg_j = x(start_j:end_j,1:(num_var*(offsetCluster+1)));
+            udseg_j = [];
+            if num_ud ~= 0
+                udseg_j = ud(start_j:end_j,1:num_ud);
+            end
 
             % If clusters are similar, merge them
-            res = FnDecideSimilarLMI(seg_i',[],seg_j',[]);
+            res = FnDecideSimilarLMI(xseg_i',udseg_i',seg_j',udseg_j');
             if(res)
                 posk = find(cluster_global == j);
                 cluster_global(posk,1) = i;
@@ -321,16 +332,16 @@ end
 function [cluster_segs, trace] = computeClustersLocal(trace, combined_metric, segIndex_var)
 % computeClustersLocal returns clusters computed on each output variable using the 
 % similarity matrix with an threshold-based approach with dynamically computed thresholds
-    global num_var thresClusterMin thresClusterMax facThres
+    global num_var num_ud thresClusterMin thresClusterMax facThres
     % Extend trace data structure to save sequence of clusters for each var 
     for i=1:length(trace)
-        trace(i).labels_trace_per_var = cell(num_var,1);
+        trace(i).labels_trace_per_var = cell(num_var+num_ud,1);
     end
 
     % Carry out clustering on each output variable using the corresponding
     % set of local changepoints
-    cluster_segs = cell(num_var,1);
-    for k = 1:num_var
+    cluster_segs = cell(num_var+num_ud,1);
+    for k = 1:(num_var+num_ud)
         segIndex_curr = cell2mat(segIndex_var(k,1));
         clusters = cell(size(segIndex_curr,1),1);
         alreadyClustered = zeros(size(segIndex_curr,1),2);
@@ -364,13 +375,13 @@ function [cluster_segs, trace] = computeClustersLocal(trace, combined_metric, se
     end
 end
 
-function [cluster_global, trace] = computeClustersGlobal(x,trace, cluster_segs, segIndex, segIndex_var)
+function [cluster_global, trace] = computeClustersGlobal(x,ud,trace, cluster_segs, segIndex, segIndex_var)
 % computeClustersGlobal returns global clusters by merging local clusters
 % to global clusters by considering all occuring combinations of local cluster ids.
-    global num_var useLMIrefine
+    global num_var num_ud useLMIrefine
     % Merge combination of local cluster id to single global cluster id by
     % utilizing a map
-    indices = ones(num_var,1);
+    indices = ones(num_var+num_ud,1);
     nextid = 1;
     cluster_global = zeros(size(segIndex,1),1);
     M = containers.Map('KeyType','char','ValueType','double');
@@ -379,7 +390,7 @@ function [cluster_global, trace] = computeClustersGlobal(x,trace, cluster_segs, 
         % Create key of current global segments for map as concatenation of 
         % all corresponding local cluster ids seperated by dashs
         key = '';
-        for k = 1:num_var
+        for k = 1:(num_var+num_ud)
             if(k ~= 1)
                 key = [key '-'];
             end
@@ -403,6 +414,6 @@ function [cluster_global, trace] = computeClustersGlobal(x,trace, cluster_segs, 
 
     %Use LMI to possibly merge incorrectly split-up clusters
     if (useLMIrefine)
-        cluster_global = refineClustersLMI(x,cluster_global,segIndex);
+        cluster_global = refineClustersLMI(x,ud,cluster_global,segIndex);
     end
 end
