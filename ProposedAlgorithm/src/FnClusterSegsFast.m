@@ -276,16 +276,21 @@ function cluster_global = refineClustersLMI(x,ud,cluster_global,segIndex)
     global num_var num_ud winlen offsetCluster windowSize
 
     labels_num = unique(cluster_global(:,1));
+    len_segs = segIndex(:,2) - segIndex(:,1) + 1;
     progress_cnt = 1;
 
     % Check for each cluster pair if they are similar, first entry
     for i=labels_num'
-        % Select segment which is part of first cluster (more advanced selection?)
-        posi = find(cluster_global == i,1);
+        % Select segment which is part of first cluster
+        posi = find(cluster_global == i);
         % Check if cluster still existent or if it was already merged
         if(isempty(posi))
             continue;
         end
+        % Select longest segment
+        [~,posTemp] = max(len_segs(posi,1));
+        posi = posi(posTemp,1);
+
         start_i = segIndex(posi,1)+winlen;
         end_i = segIndex(posi,2)-winlen;
         % Global clustering only possible if segment long enough (tune factor?)
@@ -304,10 +309,13 @@ function cluster_global = refineClustersLMI(x,ud,cluster_global,segIndex)
             disp([int2str(progress_cnt),'/', int2str((length(labels_num)^2-length(labels_num))/2)])
             progress_cnt = progress_cnt + 1;
             % Extract seg_j analog to seg_i before
-            posj = find(cluster_global == j,1);
+            posj = find(cluster_global == j);
             if(isempty(posj))
                 continue;
             end
+            [~,posTemp] = max(len_segs(posj,1));
+            posj = posj(posTemp,1);
+
             start_j = segIndex(posj,1)+winlen;
             end_j = segIndex(posj,2)-winlen;
             if(end_j-start_j-1 < 3 * windowSize)

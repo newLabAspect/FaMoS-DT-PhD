@@ -27,7 +27,7 @@ while t < 20.0
     state_old = state;
     if x_ >= 25 && state == 1
         state = 2;
-    elseif x_ <= 20 && state == 2
+    elseif x_ <= 15 && state == 2
         state = 1;
     end
 
