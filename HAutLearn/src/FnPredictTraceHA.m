@@ -1,7 +1,7 @@
 function [sim_trace] = FnPredictTraceHA(trace,conditions,ode)
 % FnPredictTraceDTL uses the HA-model of the system and inital conditions of
 % a preexisting trace to create a trace prediction
-    global num_var tolLI Ts
+    global num_var num_ud tolLI Ts
 
     % Preallocated arrays for speed
     sim_x = zeros(size(trace.x,1),size(trace.x,2));
@@ -12,25 +12,27 @@ function [sim_trace] = FnPredictTraceHA(trace,conditions,ode)
     % Extract initial conditions at predefined position from trace datastructure
     offsetPred = 0+1;
     sim_x(1,:) = trace.x(offsetPred,:);
+    sim_ud = trace.ud;
     indxLastSwitch = find(trace.chpoints(:,1) <= offsetPred,1,'last');
     lastSwitch = trace.chpoints(indxLastSwitch,1);
     sim_state(1,1) = trace.labels_trace(indxLastSwitch,1);
     curr_state = trace.labels_trace(indxLastSwitch,1);
 
     % Remove zero rows/columns in ODEs (needed for earlier HAutLearn compatibility)
-    for k = 1:length(ode)
-        A = cell2mat(ode(k));
-        A = shrinkMatrix(A);
-        ode(k) = {A};
-    end
+%     for k = 1:length(ode)
+%         A = cell2mat(ode(k));
+%         A = shrinkMatrix(A);
+%         ode(k) = {A};
+%     end
 
     % Trace Prediction (of timepoint i using timepoint i-1)
     for i = (offsetPred+1):size(trace.x)
         % Predict next data point based on ODE
         A = cell2mat(ode(curr_state));
+        B = A(1:size(A,1),(size(A,1)+1):end);
         A = A(1:size(A,1),1:size(A,1));
         curr_x = sim_x(i-1,1:size(A,1))';
-        new_x_dot = A * curr_x;
+        new_x_dot = A * curr_x + B * [sim_ud(i,:)';1];
 
         % Assume: First rows of A represent integration, thus leave out
         new_x = [curr_x(1:end,1); new_x_dot((end-num_var+1):end,1)];
@@ -57,9 +59,12 @@ function [sim_trace] = FnPredictTraceHA(trace,conditions,ode)
                 for k = 1:num_var
                     overall_sum = overall_sum + new_x(k,1) * condition(1,2+k);
                 end
+                for k = 1:num_ud
+                    overall_sum = overall_sum + sim_ud(i,k) * condition(1,2+num_var+k);
+                end
                 % Considered condition holds, thus switch states
-                if((overall_sum < tolLI && condition(1,2+num_var+1) == -1) || ...
-                   (overall_sum > -tolLI && condition(1,2+num_var+1) == +1))
+                if((overall_sum < tolLI && condition(1,2+num_var+num_ud+1) == -1) || ...
+                   (overall_sum > -tolLI && condition(1,2+num_var+num_ud+1) == +1))
                     curr_state = condition(1,2);
                     break;
                 end
@@ -76,6 +81,7 @@ function [sim_trace] = FnPredictTraceHA(trace,conditions,ode)
 
     % Create trace data structure
     sim_trace.x = sim_x;
+    sim_trace.ud = sim_ud;
     sim_trace.chpoints = [1; sim_chp; length(sim_x)];
     sim_trace.labels_trace = sim_labels;
     sim_trace.labels_num = unique(sim_labels);

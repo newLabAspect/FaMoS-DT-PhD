@@ -11,17 +11,21 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
     addpath(['HAutLearn', filesep, 'src']);
     
     %% Changepoint determination and trace setup
-    normalization = zeros(num_var,1); % obviously not ideal but works
+    normalization = zeros(num_var+num_ud,1); % obviously not ideal but works
     for i = allData
         load(['training', int2str(i),'.mat']);
         for j = 1:num_var
             normalization(j,1) = max(normalization(j,1),max(xout(:,j)));
         end
+        for j = 1:num_ud
+            normalization(num_var+j,1) = max(normalization(num_var+j,1),max(abs(udout(:,j))));
+        end
     end
     for i = allData
+        udout = []; % Needed if system with no input variables present
         load(['training', int2str(i),'.mat']);
-        xout = FnNormAndDiff(xout,normalization);
-        trace_temp = FnDetectChangePoints(xout, num_var);
+        [xout, udout] = FnNormAndDiff(xout, udout, normalization);
+        trace_temp = FnDetectChangePoints(xout, udout);
         trace_temp.true_states = states;
         trace_temp.true_chps = chpoints;
         trace(num) = trace_temp;
@@ -169,8 +173,9 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
                         trace_train_short(p:length(trace_train_short)) = [];
                         break;
                     elseif(used_len < length(trace_train_short(p).x))
-                        % trim x entries out of trace
+                        % trim x, ud entries out of trace
                         trace_train_short(p).x = trace_train_short(p).x(1:used_len,:);
+                        trace_train_short(p).ud = trace_train_short(p).ud(1:used_len,:);
                         % trim changepoints out of trace
                         toDelete = find(trace_train_short(p).chpoints >= used_len);
                         trace_train_short(p).chpoints(toDelete) = [];
@@ -211,12 +216,12 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
     
                 % Setup PTA given LIs and ODEs
                 pta_trace = FnPTA(trace_train);
-                %can solve bugs if you comment out next line. But why ?
+                % Can solve bugs if you comment out next line. But why ?
                 %pta_trace = pta_filter(pta_trace);
                 
                 % Generate Final Automaton model
                 
-                FnGenerateHyst([folder, filesep, 'automata_learning'],label_guard, num_var*(1+offsetCluster), ode, pta_trace);
+                FnGenerateHyst([folder, filesep, 'automata_learning'],label_guard, num_var*(1+offsetCluster), num_ud, ode, pta_trace);
                 t_train = [t_train; toc]; %how to measure this time should be discussed
             end %What happens with variables in scope? Seems to work...
 

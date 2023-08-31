@@ -32,8 +32,8 @@ global num_var num_ud
                         overall_sum = overall_sum + trace(l).ud(i,k) * condition(1,2+num_var+k);
                     end
                     % Considered condition holds, thus switch states
-                    if((overall_sum < tol && condition(1,2+num_var+1) == -1) || ...
-                       (overall_sum > -tol && condition(1,2+num_var+1) == +1))
+                    if((overall_sum < tol && condition(1,2+num_var+num_ud+1) == -1) || ...
+                       (overall_sum > -tol && condition(1,2+num_var+num_ud+1) == +1))
                         predicted_state = condition(1,2);
                         break;
                     end
