@@ -63,24 +63,24 @@ for label = 1:len_labels
         end
         
         % No inputs provided, thus b set to 0s. Convert to continous model
-        if num_ud == 0
-            A_Bu = mrdivide(x_seg_plus,[x_seg]);
-            dA = A_Bu(:,1:num_vars);
-            dB = zeros(size(A_Bu,1),1);
-            dC = eye(num_vars); dD = zeros(num_vars, num_ud+1);
-            sysd = ss(dA, dB, dC, dD, Ts);
-            try
-                sysc = d2c(sysd,"zoh");
-            catch
-                % Conversin to continous model not possible because too
-                % many derivatives included in state vector, retry with less
-                continue;
-            end
-            ode(label) = {[fillToSize(sysc.A,[max_num_var max_num_var]), fillToSize(sysc.B,[max_num_var 1])]};
-            break;
+%         if num_ud == 0
+%             A_Bu = mrdivide(x_seg_plus,[x_seg]);
+%             dA = A_Bu(:,1:num_vars);
+%             dB = zeros(size(A_Bu,1),1);
+%             dC = eye(num_vars); dD = zeros(num_vars, num_ud+1);
+%             sysd = ss(dA, dB, dC, dD, Ts);
+%             try
+%                 sysc = d2c(sysd,"zoh");
+%             catch
+%                 % Conversin to continous model not possible because too
+%                 % many derivatives included in state vector, retry with less
+%                 continue;
+%             end
+%             ode(label) = {[fillToSize(sysc.A,[max_num_var max_num_var]), fillToSize(sysc.B,[max_num_var 1])]};
+%             break;
         
         % Inputs provided, thus b properly estimated. Convert to continous model
-        else
+        if true
             A_Bu = mrdivide(x_seg_plus,[x_seg;ud_seg]);
             dA = A_Bu(:,1:num_vars);
             dB = A_Bu(:,num_vars+1:end);
@@ -89,7 +89,7 @@ for label = 1:len_labels
             try
                 sysc = d2c(sysd,"zoh");
             catch
-                % Conversin to continous model not possible because too
+                % Conversion to continous model not possible because too
                 % many derivatives included in state vector, retry with less
                 continue;
             end

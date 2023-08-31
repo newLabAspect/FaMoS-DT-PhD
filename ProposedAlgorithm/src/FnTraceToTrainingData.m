@@ -1,14 +1,14 @@
 function [X,Y,states] = FnTraceToTrainingData(trace)
-%FnTraceToTrainingData generates feature vectors and class labes from a
+%FnTraceToTrainingData generates feature vectors and class labels from a
 %clustered trace object
 %   The feature vector includes all trace values, the state at the current 
 %   position and possibly the time since the last system mode switch while 
 %   the label includes the state at the next position
-    global precisionDTL num_var useTime
+    global num_var num_ud useTime
 
     % Preallocate matrices needed to save samples
     states = zeros(size(trace.x,1)-1,1);
-    values = zeros(size(trace.x,1)-1,num_var);
+    values = zeros(size(trace.x,1)-1,num_var+num_ud);
     timeSwitch = zeros(size(trace.x,1)-1,1);
     % Variables needed to keep track of states
     lastswitch = 1;
@@ -23,7 +23,10 @@ function [X,Y,states] = FnTraceToTrainingData(trace)
 
         % Save samples needed for feature vector and class label creation
         states(indx,:) = [trace.labels_trace(indxStates,1)];
-        values(indx,:) = [trace.x(indx,1:num_var)];
+        values(indx,1:num_var) = [trace.x(indx,1:num_var)];
+        if num_ud ~= 0
+            values(indx,num_var+(1:num_ud)) = [trace.ud(indx,1:num_ud)];
+        end
         timeSwitch(indx,:) = indx-lastswitch;
     end
 

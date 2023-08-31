@@ -1,4 +1,4 @@
-function FnGenerateHyst(file_name,label_guard, num_var, ode, pta_trace)
+function FnGenerateHyst(file_name,label_guard, num_var, num_ud, ode, pta_trace)
 
 % import data structures from Hyst
 javaaddpath(['HAutLearn', filesep, 'src',filesep,'hyst', filesep, 'lib', filesep, 'Hyst.jar']);
@@ -29,14 +29,18 @@ varNames = {};
 for i = 1 : num_var
     varNames{i} = ['x', num2str(i)];
 end
+udNames = {};
+for i = 1 : num_ud
+    udNames{i} = ['u', num2str(i)];
+end
 
 for i = 1 : length(ode)
-    modesToFlows{i} = odeMatrixToString(ode{i}, varNames);
+    modesToFlows{i} = odeMatrixToString(ode{i}, varNames, udNames);
 end
 
 %for the terminal state "0"
 ode0 =zeros(size(ode{1}));
-modesToFlows{length(ode)+1} = odeMatrixToString(ode0, varNames);
+modesToFlows{length(ode)+1} = odeMatrixToString(ode0, varNames, udNames);
 
 numVar = length(varNames);
 
@@ -89,7 +93,7 @@ end
 for i = 1 : length(pta_trace)
     li_id = pta_trace(i).guard;
     v = label_guard{li_id};
-    guard{i} = guardVectorToString(v, varNames);
+    guard{i} = guardVectorToString(v, varNames, udNames);
 end
 % guard = {%'vc >= Vref+Vtol';'vc >= Vref-Vtol';'il <= 0';'vc >= Vref-Vtol'
 %         };
@@ -175,13 +179,20 @@ end
 
 % this function takes a matrix A, which is an element of the ode list
 % variable returned by other parts of the automata learning
-function [out] = odeMatrixToString(A,varNames)
+function [out] = odeMatrixToString(A,varNames,udNames)
     x = [];
+    ud = [];
     
     n = length(varNames); % state space dimensionality
     
     for i = 1 : n
         x = [x; sym(varNames{i})];
+    end
+
+    m = length(udNames);
+
+    for i = 1 : m
+        ud = [ud; sym(udNames{i})];
     end
     
     Ar = A(1:n,1:n); % this matrix that ode returns is not just the A matrix, it has some extra parts so the dimensionality is greater than n
@@ -189,7 +200,13 @@ function [out] = odeMatrixToString(A,varNames)
     n_extra = length(A);
     Br = A(1:n,n_extra);
     
-    tmp = string(vpa(Ar * x + Br, 4)); % round to 4 decimals
+    B = A(1:n,(n+1):(n+m));
+    
+    if m ~= 0
+        tmp = string(vpa(Ar * x + B * ud + Br, 4)); % round to 4 decimals
+    else
+        tmp = string(vpa(Ar * x + Br, 4)); % round to 4 decimals
+    end
     odeStrConjunction = '';
     for i = 1 : n
         odeStr = strcat(varNames(i), ''' == ', tmp{i});
@@ -205,19 +222,30 @@ end
 
 % this function takes a matrix A, which is an element of the ode list
 % variable returned by other parts of the automata learning
-function [out] = guardVectorToString(V,varNames)
+function [out] = guardVectorToString(V,varNames,udNames)
     x = [];
+    ud = [];
     
     n = length(varNames); % state space dimensionality
     
     for i = 1 : n
         x = [x; sym(varNames{i})];
     end
+
+    m = length(udNames);
+
+    for i = 1 : m
+        ud = [ud; sym(udNames{i})];
+    end
     
     Vr = V(1:n,:)'; % this matrix that ode returns is not just the A matrix, it has some extra parts so the dimensionality is greater than n
-    
+    Ur = V((n+1):(n+m),:);
 
-    tmp = string((vpa(Vr * x, 4))); % round to 4 decimals;
+    if m ~= 0
+        tmp = string((vpa(Vr * x + Ur * ud, 4))); % round to 4 decimals;
+    else
+        tmp = string((vpa(Vr * x, 4))); % round to 4 decimals;
+    end
     odeStrConjunction = '';
     for i = 1 : size(V,2)
         if V(end,i)==-1

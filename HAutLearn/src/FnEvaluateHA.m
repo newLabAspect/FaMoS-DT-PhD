@@ -1,7 +1,7 @@
 function [correct,false] = FnEvaluateHA(trace, conditions, tol)
 % FnEvaluateHA evaluates the trained HA model against an evaluation dataset
 % provided by a trace datastructure
-global num_var
+global num_var num_ud
     
     correct = 0;
     false = 0;
@@ -27,6 +27,9 @@ global num_var
                     overall_sum = +1.0;
                     for k = 1:num_var
                         overall_sum = overall_sum + trace(l).x(i,k) * condition(1,2+k);
+                    end
+                    for k = 1:num_ud
+                        overall_sum = overall_sum + trace(l).ud(i,k) * condition(1,2+num_var+k);
                     end
                     % Considered condition holds, thus switch states
                     if((overall_sum < tol && condition(1,2+num_var+1) == -1) || ...

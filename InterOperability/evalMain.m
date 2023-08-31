@@ -174,8 +174,9 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
                         trace_train_short(p:length(trace_train_short)) = [];
                         break;
                     elseif(used_len < length(trace_train_short(p).x))
-                        % trim x entries out of trace
+                        % trim x, ud entries out of trace
                         trace_train_short(p).x = trace_train_short(p).x(1:used_len,:);
+                        trace_train_short(p).ud = trace_train_short(p).ud(1:used_len,:);
                         % trim changepoints out of trace
                         toDelete = find(trace_train_short(p).chpoints >= used_len);
                         trace_train_short(p).chpoints(toDelete) = [];
@@ -216,14 +217,14 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
     
                 % Setup PTA given LIs and ODEs
                 pta_trace = FnPTA(trace_train);
-                %can solve bugs if you comment out next line. But why ?
+                % Can solve bugs if you comment out next line. But why ?
                 %pta_trace = pta_filter(pta_trace);
                 
                 % Generate Final Automaton model
                 
-                FnGenerateHyst([folder, filesep, 'automata_learning'],label_guard, num_var*(1+offsetCluster), ode, pta_trace);
-                t_train = [t_train; toc]; %how to measure this time should be discussed
-            end %What happens with variables in scope? Seems to work...
+                FnGenerateHyst([folder, filesep, 'automata_learning'],label_guard, num_var*(1+offsetCluster), num_ud, ode, pta_trace);
+                t_train = [t_train; toc]; % How to measure this time should be discussed
+            end % What happens with variables in scope? Seems to work...
 
             xmlstruct = readstruct([folder, filesep, 'automata_learning.xml']);
             

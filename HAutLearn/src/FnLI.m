@@ -9,12 +9,16 @@ for i = 1:length(trace)
     chpoints = trace(i).chpoints;
     labels_trace = trace(i).labels_trace;
     x = trace(i).x(:,1:num_var);
+    ud = trace(i).ud(:,1:num_ud);
 
     for j = 1:(length(labels_trace)-1)  % last chpoints is the end point
 
         chpoints_temp = chpoints(j+1);
-        trans(end+1,:) = [trace(i).labels_trace(j),trace(i).labels_trace(j+1),x(chpoints_temp,:)]; 
-        
+        if num_ud == 0
+            trans(end+1,:) = [trace(i).labels_trace(j),trace(i).labels_trace(j+1),x(chpoints_temp,:)]; 
+        else
+            trans(end+1,:) = [trace(i).labels_trace(j),trace(i).labels_trace(j+1),x(chpoints_temp,:),ud(chpoints_temp,:)];
+        end
     end
 
 end
@@ -41,9 +45,9 @@ for i = 1:size(state_trans,1)
     end
     % wb: inequality parameters, inlayer: index of inlayer points
     if Time
-        num_vars = num_var+1;
+        num_vars = num_var+num_ud+1;
     else
-        num_vars = num_var;
+        num_vars = num_var+num_ud;
     end
     [wb_temp, inlayer_temp] = FnEstLI(points, num_vars,iter,threshDist,inNum);
     if isempty(wb_temp)
@@ -172,7 +176,7 @@ function [M, inlayer]= FnInequalitySymbol(indx_ch, wb, inlayer_temp, trace, poin
 end
 
 function seg = FnGetSeg(indx, trace)
-    global num_var
+    global num_var num_ud
     t = 1;
     seg = [];
     for i = 1:length(trace)
@@ -185,7 +189,11 @@ function seg = FnGetSeg(indx, trace)
 
             if t == indx 
                 x_temp = trace(i).x(trace(i).chpoints(j):trace(i).chpoints(j+1),1:num_var);
-                seg = x_temp;
+                seg = [x_temp];
+                if num_ud ~= 0
+                    ud_temp = trace(i).ud(trace(i).chpoints(j):trace(i).chpoints(j+1),1:num_ud);
+                    seg = [x_temp ud_temp];
+                end
                 return;
             end
             t = t+1;
