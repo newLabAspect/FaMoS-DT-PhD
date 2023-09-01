@@ -19,7 +19,7 @@ for label = 1:len_labels
             labels_trace = trace(j).labels_trace;
             idx = find(labels_trace == label);
             x = trace(j).x(:,1:num_vars);
-            ud = trace(j).ud;
+            ud = trace(j).ud(:,1:num_ud);
              
             startj = trace(j).chpoints(idx);
             endj = trace(j).chpoints(idx+1)-1;
@@ -27,7 +27,8 @@ for label = 1:len_labels
             for n = 1:length(startj)
                 % Save state space vector
                 x_seg = [x_seg, x(startj(n):(endj(n)-1), :)'];
-                % If no input available, use 1s as placeholders
+                % Additional input with only 1s considered to allow for
+                % additive constants
                 if isempty(ud)
                     ud_seg = [ud_seg, ones(1, (endj(n)- startj(n)))];
                 else
@@ -39,8 +40,8 @@ for label = 1:len_labels
             end
         end
 
-        % ODE datastructure is A appended by b. As different ODE degrees
-        % are supported, A and b are extended to their maximal sizes
+        % ODE datastructure is A appended by B. As different ODE degrees
+        % are supported, A and B are extended to their maximal sizes
         
         % No conversion to a continous model possible, denoted by -1s in ODE
         if size(x_seg,2)/length(trace)==2
@@ -64,14 +65,14 @@ for label = 1:len_labels
             % many derivatives included in state vector, retry with less
             continue;
         end
-        ode(label) = {[fillToSize(sysc.A,[max_num_var max_num_var]), fillToSize(sysc.B,[max_num_var 1])]};
+        ode(label) = {[fillToSize(sysc.A,[max_num_var max_num_var]), fillToSize(sysc.B,[max_num_var num_ud+1])]};
         break;
     end
 end
 end
 
 function A_new = fillToSize(A,len)
-% fillToSize extends the matrix A to size len x len
+% fillToSize extends the matrix A to size len x len (and never shortens it)
     A_new = zeros(len);
     A_new(1:size(A,1),1:size(A,2)) = A;
 end

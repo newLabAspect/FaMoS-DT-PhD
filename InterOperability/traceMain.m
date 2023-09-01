@@ -11,7 +11,7 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
     addpath(['HAutLearn', filesep, 'src']);
     
     %% Changepoint determination and trace setup
-    normalization = zeros(num_var+num_ud,1); % obviously not ideal but works
+    normalization = zeros(num_var+num_ud,1);
     for i = allData
         load(['training', int2str(i),'.mat']);
         for j = 1:num_var
@@ -51,9 +51,11 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
     end
     
     t_cluster = toc;
+
+    % Remove changepoints that are not associated with an system mode switch
     trace = FnCleanChangePoints(trace);
 
-    %Eval clusters
+    % Eval clusters
     ClusterCorrect = 0;
     ClusterFalse = 0;
     for i = 1:length(trace)
@@ -66,30 +68,23 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
     
     % Choose which algorithm to use for training
     if(methodTraining == 0) % Use DTL for training
-        global precisionDTL
-        %legacy eval paras
-        N = 1; % how many past states should be used to predict
         
         correctAll = [];
         falseAll = [];
         t_train = [];
 
+        %compute eval data
+        Xe = [];
+        Ye = [];
+        
+        for i = evalData
+            [Xnew,Ynew,states] = FnTraceToTrainingData(trace(i));
+            Xe = [Xe; Xnew];
+            Ye = [Ye; Ynew];
+        end
+            
         for j = 1:length(variedMetricSteps)
-            %vary selected metric
-            if(variedMetric == 0)
-                precisionDTL = variedMetricSteps(1,j);
-            end
 
-            %compute eval data
-            Xe = [];
-            Ye = [];
-            
-            for i = evalData
-                [Xnew,Ynew,states] = FnTraceToTrainingData(trace(i));
-                Xe = [Xe; Xnew];
-                Ye = [Ye; Ynew];
-            end
-            
             tic;
             %compute maximal training data
             X = [];
@@ -239,8 +234,6 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
             end
             disp([num2str(round(j/length(variedMetricSteps)*100,2)),' % done']);
         end
-
-        %Prediction (TODO: generalize for systems with multiple output vars)
 
         [sim_trace] = FnPredictTraceHA(trace(evalData(1)),conditions,ode);
     end

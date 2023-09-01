@@ -3,7 +3,7 @@ function [xout, udout] = FnNormAndDiff(xout, udout, norm_coeff)
 % coefficients and calculates deriatives up to max_deriv
     global num_ud num_var max_deriv Ts
 
-    % Normalize using normalization factor
+    % Normalize outputs using normalization factors
     for j = 1:num_var
         xout(:,j) = 1/norm_coeff(j,1) * xout(:,j);
     end
@@ -17,14 +17,15 @@ function [xout, udout] = FnNormAndDiff(xout, udout, norm_coeff)
         end
     end
 
-    % Strip entries from front bc derivs are not available there
+    % Strip entries from front of outputs bc derivs are not available there
     xout = xout((max_deriv+1):end,:);
 
-    % Inputs are currently only normalized
+    % Normalize inputs using normalization factors (Derivs not needed)
     for j = 1:num_ud
         udout(:,j) = 1/norm_coeff(num_var+j,1) * udout(:,j);
     end
-    % And shortened to match with output vars
+
+    % Strip entries from front of inputs to match with output vars
     if num_ud ~= 0
         udout = udout((max_deriv+1):end,:);
     end

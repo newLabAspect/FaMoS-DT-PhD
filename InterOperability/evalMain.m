@@ -58,6 +58,8 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
     end
     
     t_cluster = toc;
+    
+    % Remove changepoints that are not associated with an system mode switch
     trace = FnCleanChangePoints(trace);
 
     %Eval clusters

@@ -1,8 +1,9 @@
 function trace = FnDetectChangePoints(xout, udout)
-% FnDetectChangePoints returns local and global changepoints present in xout
+% FnDetectChangePoints returns local and global changepoints present in
+% input and output traces
 %   A sliding window approach, utilizing the euclidean distance between
 %   the immediate past and immediate future to detect changes in dynamic
-%   behavior on all derivatives, is used
+%   behavior on all available derivatives, is used
     global num_var num_ud max_deriv chp_depths
     warning('off','signal:findpeaks:largeMinPeakHeight');
 
@@ -25,7 +26,7 @@ function trace = FnDetectChangePoints(xout, udout)
         chp_var(num_var+i) = {new_chp};
     end
     
-    % Filter changepoints given e.g. close proximity while keeping entries
+    % Filter changepoints given close proximity while keeping entries
     % in global and local changepoint set consistent
     [xout,udout,chpoints,chp_var] = filterChangePoints(xout, udout, chpoints, chp_var);
 
@@ -75,13 +76,13 @@ function locs = findChangePoints(xout,depth,starting,ending,max_depth)
     dist = computeDistance(der);
 
     % Peaks in distance indicate change in dynamic behavior (introduce para for minimal peak height?)
-    [pksDist,locsDist] = findpeaks(dist,"MinPeakHeight",5);
+    [~,locsDist] = findpeaks(dist,"MinPeakHeight",5);
     % Convert index on interval to index on trace
     locsHere = locsDist+starting-1;
     locsHere = sort(locsHere);
     % Remove changepoints that likely come from same system mode switch (why 1.5*... ?)
     locsHere = filterindx(locsHere,1.5*windowSize);
-    chp_depths(depth+1) = chp_depths(depth+1) + length(locsHere); % debugging
+    chp_depths(depth+1) = chp_depths(depth+1) + length(locsHere); % Debugging
     locs = [locs; locsHere];
 
     % Formulate new intervals for next recursive calls and add changepoints
@@ -104,8 +105,8 @@ function locs = findChangePoints(xout,depth,starting,ending,max_depth)
 end
 
 function [xout,udout,chpoints,chp_var] = filterChangePoints(xout, udout, chpoints, chp_var)
-% filterChangePoints returns xout and the local and global changepoint set
-% after applying some filtering rules
+% filterChangePoints returns xout, udout and the local and global 
+% changepoint set after applying some filtering rules
 %   Changepoints that are visible on mutliple output variables and thus 
 %   generate multiple entries in the global changepoint set are merged;
 %   short last segments are deleted; entries in local changepoint sets
@@ -138,7 +139,7 @@ function [xout,udout,chpoints,chp_var] = filterChangePoints(xout, udout, chpoint
         % Find closest changepoint in global set (distance can be zero) and
         % use this changepoint value going forward
         for j = 1:length(current_chps)
-            [val,ind] = min(abs(chpoints-current_chps(j,1)));
+            [~,ind] = min(abs(chpoints-current_chps(j,1)));
             current_chps(j,1) = chpoints(ind,1);
         end
         % Remove possible duplicate at end from previous step
@@ -153,7 +154,8 @@ end
 
 % Carried over from HAutLearn (with one minor bugfix)
 function indx = filterindx(indx,windw)
-%if there are two changepoint inside a windw the 2nd one gets erased
+% filterindx checks if there are two changepoint inside a windw and erases 
+% the 2nd one if this is the case
     n = 1;
     while true
         if n >= length(indx)

@@ -44,7 +44,7 @@ for i = 1:size(state_trans,1)
         continue;
     end
     % wb: inequality parameters, inlayer: index of inlayer points
-    if Time
+    if Time % TODO
         num_vars = num_var+num_ud+1;
     else
         num_vars = num_var+num_ud;

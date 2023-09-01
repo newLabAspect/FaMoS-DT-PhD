@@ -1,5 +1,5 @@
 function [sim_trace] = FnPredictTraceHA(trace,conditions,ode)
-% FnPredictTraceDTL uses the HA-model of the system and inital conditions of
+% FnPredictTraceHA uses the HA-model of the system and inital conditions of
 % a preexisting trace to create a trace prediction
     global num_var num_ud tolLI Ts
 
@@ -12,11 +12,12 @@ function [sim_trace] = FnPredictTraceHA(trace,conditions,ode)
     % Extract initial conditions at predefined position from trace datastructure
     offsetPred = 0+1;
     sim_x(1,:) = trace.x(offsetPred,:);
-    sim_ud = trace.ud;
     indxLastSwitch = find(trace.chpoints(:,1) <= offsetPred,1,'last');
     lastSwitch = trace.chpoints(indxLastSwitch,1);
     sim_state(1,1) = trace.labels_trace(indxLastSwitch,1);
     curr_state = trace.labels_trace(indxLastSwitch,1);
+    % Inputs are fully needed for predicition
+    sim_ud = trace.ud;
 
     % Remove zero rows/columns in ODEs (needed for earlier HAutLearn compatibility)
     for k = 1:length(ode)

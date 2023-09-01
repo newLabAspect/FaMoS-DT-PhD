@@ -64,6 +64,8 @@ global num_var num_ud offsetCluster
 end
 
 function [AB,curr_line] = extractCoeffs(AB,curr_line,j,c,num,off)
+% extractCoeffs extracts all coeffs of form "character c followed k" (up
+% to num) from curr_line and saves them in row j and col off+k of AB
     for k = 1:num
         pos_end = strfind(curr_line,sprintf(" * "+c+"%d",k))-1;
         % Considered variable not present, thus no coefficient needed
@@ -95,7 +97,7 @@ global num_var num_ud
     % Consider all transitions of the xml-representation
     for i = 1:length(xmlstruct.component(1).transition)
         curr_trans = transitions(i); 
-        condition = zeros(1,num_var+num_ud+1+2);
+        condition = zeros(1,2+num_var+num_ud+1);
 
         % Extract Origin
         condition(1,1) = locToClusterID(curr_trans.sourceAttribute);

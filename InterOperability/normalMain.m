@@ -1,7 +1,7 @@
 function [correct,false,t_cluster,t_train] = normalMain(allData,evalData,folder)
     %only global vars needed for this top level program are listed here, if 
     %needed in subfunctions they are listed only there for simplicity
-    global num_var num_ud Ts max_deriv useLMIrefine methodCluster methodTraining
+    global num_var num_ud offsetCluster Ts max_deriv useLMIrefine methodCluster methodTraining
     
     num = 1; x = []; ud = [];
     
@@ -17,18 +17,24 @@ function [correct,false,t_cluster,t_train] = normalMain(allData,evalData,folder)
         for j = 1:num_var
             normalization(j,1) = max(normalization(j,1),max(xout(:,j)));
         end
+        for j = 1:num_ud
+            normalization(num_var+j,1) = max(normalization(num_var+j,1),max(abs(udout(:,j))));
+        end
     end
     for i = allData
+        udout = []; % Needed if system with no input variables present
         load(['training', int2str(i),'.mat']);
-        xout = FnNormAndDiff(xout,normalization);
-        trace_temp = FnDetectChangePoints(xout, num_var);
+        [xout, udout] = FnNormAndDiff(xout, udout, normalization);
+        trace_temp = FnDetectChangePoints(xout, udout);
+        trace_temp.true_states = states;
+        trace_temp.true_chps = chpoints;
         trace(num) = trace_temp;
         %all traces are appended (needed for clustering in that form)
         x = [x; trace(num).x];
         ud = [ud; trace(num).ud];
         num = num+1; 
     end
-    
+
     %% Determine clustered trace segments
     
     tic;
@@ -46,6 +52,18 @@ function [correct,false,t_cluster,t_train] = normalMain(allData,evalData,folder)
     
     t_cluster = toc;
     
+    % Remove changepoints that are not associated with an system mode switch
+    trace = FnCleanChangePoints(trace);
+
+    %Eval clusters
+    ClusterCorrect = 0;
+    ClusterFalse = 0;
+    for i = 1:length(trace)
+        [cTemp, fTemp] = FnEvalCluster(trace(i).labels_trace,trace(i).true_states,trace(i).true_chps);
+        ClusterCorrect = ClusterCorrect + cTemp;
+        ClusterFalse = ClusterFalse + fTemp;
+    end
+
     %% Training and short Eval
     
     % Choose which algorithm to use for training
@@ -102,14 +120,22 @@ function [correct,false,t_cluster,t_train] = normalMain(allData,evalData,folder)
         
         % LI Estimation given parameters
         [trace_train,label_guard] = FnLI(trace(setdiff(allData,evalData)), eta, lambda, gamma);
+        % Extend label_guard by zeros for considered derivatives so
+        % that generated automaton xml file is clean (currently no
+        % transitions based on derivatives are allowed)
+        for k = 1:length(label_guard)
+            curr_label_guard = cell2mat(label_guard(k));
+            label_guard(k) = {[curr_label_guard(1:num_var); zeros(offsetCluster*num_var,1); curr_label_guard((num_var+1):end)]};
+        end
         
         % Setup PTA given LIs and ODEs
         pta_trace = FnPTA(trace_train);
-        pta_trace = pta_filter(pta_trace);
+        % Can solve bugs if you comment out next line. But why ?
+        %pta_trace = pta_filter(pta_trace);
         
         % Generate Final Automaton model
         
-        FnGenerateHyst([folder, filesep, 'automata_learning'],label_guard, num_var, ode, pta_trace);
+        FnGenerateHyst([folder, filesep, 'automata_learning'],label_guard, num_var*(1+offsetCluster), num_ud, ode, pta_trace);
         t_train = toc; %how to measure this time should be discussed
 
         xmlstruct = readstruct([folder, filesep, 'automata_learning.xml']);

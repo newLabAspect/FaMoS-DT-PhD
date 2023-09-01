@@ -13,11 +13,11 @@ chpoints = [i];
 x = x_init(curr, :);
 
 ud = zeros(2001,1);
-ud(1000:end,1) = 10;
+ud(1000:end,1) = 1;
 
 while t < 20.0
     if state == 1
-        x_dot = 0.5 * x(i,1) + 0.5 * ud(i,1);
+        x_dot = 0.5 * x(i,1) + 5 * ud(i,1);
         x_ = x(i,1) + x_dot*Ts;
     elseif state == 2
         x_dot = -0.5 * x(i,1);
@@ -25,9 +25,9 @@ while t < 20.0
     end
 
     state_old = state;
-    if x_ >= 25 && state == 1
+    if x_ >= 25+4*ud(i,1) && state == 1
         state = 2;
-    elseif x_ <= 15 && state == 2
+    elseif x_ <= 15+2*ud(i,1) && state == 2
         state = 1;
     end
 
