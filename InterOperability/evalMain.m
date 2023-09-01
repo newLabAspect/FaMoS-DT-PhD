@@ -58,6 +58,7 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
     end
     
     t_cluster = toc;
+    trace = FnCleanChangePoints(trace);
 
     %Eval clusters
     ClusterCorrect = 0;
@@ -176,7 +177,9 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
                     elseif(used_len < length(trace_train_short(p).x))
                         % trim x, ud entries out of trace
                         trace_train_short(p).x = trace_train_short(p).x(1:used_len,:);
-                        trace_train_short(p).ud = trace_train_short(p).ud(1:used_len,:);
+                        if num_ud ~= 0
+                            trace_train_short(p).ud = trace_train_short(p).ud(1:used_len,:);
+                        end
                         % trim changepoints out of trace
                         toDelete = find(trace_train_short(p).chpoints >= used_len);
                         trace_train_short(p).chpoints(toDelete) = [];

@@ -39,8 +39,8 @@ function [eps] = errorAlignedPoints(xs,xs_est,tau_max)
 % from two traces allowing from up to tau_max as a timeshift
     global num_var
 
-    % Variable to track error. Traces are normalized, thus +1.0 is sufficient
-    eps = 1.0;
+    % Variable to track error
+    eps = 0.0;
 
     % Go over all points from original trace
     for h = 1:size(xs,1)

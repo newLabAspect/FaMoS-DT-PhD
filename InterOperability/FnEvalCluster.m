@@ -4,9 +4,12 @@ function [correct, false] = FnEvalCluster(estimated, truth, truth_chps)
 % too short to detect, all changepoints of truth are provided to filter these  
     global windowSize
 
-    % Remove too small segments out of truth array
-    indx_remove = find((truth_chps(2:end) - truth_chps(1:(length(truth_chps)-1))) <= windowSize);
-    truth(indx_remove) = [];
+    % Remove too small segments out of truth array if there are less
+    % segments in estimated trace than in ground truth
+    if(length(estimated) < length(truth))
+        indx_remove = find((truth_chps(2:end) - truth_chps(1:(length(truth_chps)-1))) <= windowSize);
+        truth(indx_remove) = [];
+    end
 
     % Find fitting permutation between generated and truth cluster ids.
     % Generate mapping truth to generated cluster ids, but this masks if  

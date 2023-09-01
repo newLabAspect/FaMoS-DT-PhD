@@ -19,11 +19,13 @@ function [sim_trace] = FnPredictTraceDTL(trace,Mdl,ode)
     curr_state = trace.labels_trace(indxLastSwitch,1);
 
     % Remove zero rows/columns in ODEs (needed for earlier HAutLearn compatibility)
-%     for k = 1:length(ode)
-%         A = cell2mat(ode(k));
-%         A = shrinkMatrix(A);
-%         ode(k) = {A};
-%     end
+    for k = 1:length(ode)
+        A = cell2mat(ode(k));
+        % Last num_ud+1 cols extracted as an additional input with only 1s is considered
+        B = A(:,(end-num_ud):end); 
+        A = shrinkMatrix(A(1:size(A,1),1:size(A,1)));
+        ode(k) = {[A,B(1:size(A,1),:)]};
+    end
     
     % Trace Prediction (of timepoint i using timepoint i-1)
     for i = (offsetPred+1):size(trace.x)
@@ -32,7 +34,11 @@ function [sim_trace] = FnPredictTraceDTL(trace,Mdl,ode)
         B = A(1:size(A,1),(size(A,1)+1):end);
         A = A(1:size(A,1),1:size(A,1));
         curr_x = sim_x(i-1,1:size(A,1))';
-        new_x_dot = A * curr_x + B * [sim_ud(i,:)';1];
+        curr_u = [1];
+        if num_ud ~= 0
+            curr_u = [sim_ud(i,:)';1];
+        end
+        new_x_dot = A * curr_x + B * curr_u;
 
         % Assume: First rows of A represent integration, thus leave out
         new_x = [curr_x(1:end,1); new_x_dot((end-num_var+1):end,1)];

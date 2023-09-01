@@ -31,7 +31,7 @@ while t < 20.0
         state = 1;
     end
 
-    if(state ~= state_old || i == 1000)
+    if(state ~= state_old)
         states = [states; state];
         chpoints = [chpoints; i];
     end

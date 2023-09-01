@@ -44,58 +44,28 @@ for label = 1:len_labels
         
         % No conversion to a continous model possible, denoted by -1s in ODE
         if size(x_seg,2)/length(trace)==2
-            % No inputs provided, thus b set to 0s
-            if num_ud == 0
-                A_Bu = mrdivide(x_seg_plus,[x_seg]);
-                dA = A_Bu(:,1:num_vars);
-                dB = zeros(size(A_Bu,1),1);
-                % -1 indicate the ode is descrete and is used for variable reset
-                ode(label) = {[fillToSize(dA,[max_num_var max_num_var]), fillToSize(dB,[max_num_var 1]), -ones(num_vars,1)]};
-            % Inputs provided, thus b properly estimated
-            else
-                A_Bu = mrdivide(x_seg_plus,[x_seg;ud_seg]);
-                dA = A_Bu(:,1:num_vars);
-                dB = A_Bu(:,num_vars+1:end);
-                % -1 indicate the ode is descrete and is used for variable reset
-                ode(label) = {[fillToSize(dA,[max_num_var max_num_var]), fillToSize(dB,[max_num_var 1]), -ones(num_vars,1)]};
-            end
-            return
-        end
-        
-        % No inputs provided, thus b set to 0s. Convert to continous model
-%         if num_ud == 0
-%             A_Bu = mrdivide(x_seg_plus,[x_seg]);
-%             dA = A_Bu(:,1:num_vars);
-%             dB = zeros(size(A_Bu,1),1);
-%             dC = eye(num_vars); dD = zeros(num_vars, num_ud+1);
-%             sysd = ss(dA, dB, dC, dD, Ts);
-%             try
-%                 sysc = d2c(sysd,"zoh");
-%             catch
-%                 % Conversin to continous model not possible because too
-%                 % many derivatives included in state vector, retry with less
-%                 continue;
-%             end
-%             ode(label) = {[fillToSize(sysc.A,[max_num_var max_num_var]), fillToSize(sysc.B,[max_num_var 1])]};
-%             break;
-        
-        % Inputs provided, thus b properly estimated. Convert to continous model
-        if true
             A_Bu = mrdivide(x_seg_plus,[x_seg;ud_seg]);
             dA = A_Bu(:,1:num_vars);
             dB = A_Bu(:,num_vars+1:end);
-            dC = eye(num_vars); dD = zeros(num_vars, num_ud+1);
-            sysd = ss(dA, dB, dC, dD, Ts);
-            try
-                sysc = d2c(sysd,"zoh");
-            catch
-                % Conversion to continous model not possible because too
-                % many derivatives included in state vector, retry with less
-                continue;
-            end
-            ode(label) = {[fillToSize(sysc.A,[max_num_var max_num_var]), fillToSize(sysc.B,[max_num_var 1])]};
+            % -1 indicate the ode is descrete and is used for variable reset
+            ode(label) = {[fillToSize(dA,[max_num_var max_num_var]), fillToSize(dB,[max_num_var 1]), -ones(num_vars,1)]};
             break;
         end
+        
+        A_Bu = mrdivide(x_seg_plus,[x_seg;ud_seg]);
+        dA = A_Bu(:,1:num_vars);
+        dB = A_Bu(:,num_vars+1:end);
+        dC = eye(num_vars); dD = zeros(num_vars, num_ud+1);
+        sysd = ss(dA, dB, dC, dD, Ts);
+        try
+            sysc = d2c(sysd,"zoh");
+        catch
+            % Conversion to continous model not possible because too
+            % many derivatives included in state vector, retry with less
+            continue;
+        end
+        ode(label) = {[fillToSize(sysc.A,[max_num_var max_num_var]), fillToSize(sysc.B,[max_num_var 1])]};
+        break;
     end
 end
 end
