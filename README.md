@@ -26,3 +26,13 @@ The following unique features are associated to each exemplary system:
 | Three State Stochastic Hybrid Automaton | Stochastic Transitions                |
 | Complex Hybrid Automaton                | Large Scale Example                   |
 
+## Prerequisites
+
+The following MATLAB toolboxes are required to use the framework (as of October 2023):
+
+- Signal Processing Toolbox (various use-cases)
+- Robust Control Toolbox (mainly used for LMIs)
+- Statistics and Machine Learning Toolbox (mainly used for Decision Tree Learning)
+- Symbolic Math Toolbox (mainly used for Automata Learning)
+- Control System Toolbox (mainly used to convert discrete state space models to continous ones)
+
