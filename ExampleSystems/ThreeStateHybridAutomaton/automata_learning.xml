@@ -4,16 +4,16 @@
       <param controlled="true" d1="1" d2="1" dynamics="any" local="false" name="x1" type="real"/>
       <param controlled="true" d1="1" d2="1" dynamics="any" local="false" name="x2" type="real"/>
       <location id="1" name="loc1">
-         <flow>x1' == 0.002504 * x1 + 0.9975 * x2 - 0.00000000000005895 &amp;
- x2' == 0.5012 * x1 - 0.5038 * x2 - 0.0000000000000007229</flow>
+         <flow>x1' == 1.995 * x1 - 0.995 * x2 - 0.0000000000000007268 &amp;
+ x2' == x1 + 0.00000000000000449 * x2 - 0.0000000000000001174</flow>
       </location>
       <location id="2" name="loc2">
-         <flow>x1' == 0.9978 * x2 - 0.003169 * x1 + 0.0006169 &amp;
- x2' == 0.1235 - 0.4372 * x2 - 0.6343 * x1</flow>
+         <flow>x1' == 1.996 * x1 - 0.9956 * x2 + 0.00001232 &amp;
+ x2' == x1 - 0.00000000000000009869 * x2 + 0.0000000000000001354</flow>
       </location>
       <location id="3" name="loc3">
-         <flow>x1' == 0.0000000000000199 - 0.5013 * x1 &amp;
- x2' == 0.0</flow>
+         <flow>x1' == 0.995 * x1 + 0.0000000000001122 * x2 + 0.0000000000000002233 &amp;
+ x2' == 1.0 * x1 - 0.0000000000005433 * x2 + 0.0000000000000002493</flow>
       </location>
       <transition asap="false" bezier="false" source="1" target="2" timedriven="false">
          <guard>-1.232 * x1 + 1.0 &lt; 0.0</guard>

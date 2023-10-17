@@ -1,17 +1,17 @@
 function [sim_trace] = FnPredictTraceDTL(trace,Mdl,ode)
 % FnPredictTraceDTL uses the DT-model of the system and inital conditions of
 % a preexisting trace to create a trace prediction
-    global useTime num_var num_ud Ts
+    global useTime num_var num_ud Ts offsetCluster
 
     % Preallocated arrays for speed
-    sim_x = zeros(size(trace.x,1),size(trace.x,2));
+    sim_x = zeros(size(trace.x,1),num_var*(1+offsetCluster));
     sim_state = zeros(size(trace.x,1),1);
     sim_chp = [];
     sim_labels = [];
 
     % Extract initial conditions at predefined position from trace datastructure
     offsetPred = 0+1;
-    sim_x(1,:) = trace.x(offsetPred,:);
+    sim_x(1,:) = trace.xs(offsetPred,1:num_var*(1+offsetCluster));
     indxLastSwitch = find(trace.chpoints(:,1) <= offsetPred,1,'last');
     lastSwitch = trace.chpoints(indxLastSwitch,1);
     sim_state(1,1) = trace.labels_trace(indxLastSwitch,1);
@@ -19,15 +19,6 @@ function [sim_trace] = FnPredictTraceDTL(trace,Mdl,ode)
     % Inputs are fully needed for predicition
     sim_ud = trace.ud;
 
-    % Remove zero rows/columns in ODEs (needed for earlier HAutLearn compatibility)
-    for k = 1:length(ode)
-        A = cell2mat(ode(k));
-        % Last num_ud+1 cols extracted as an additional input with only 1s is considered
-        B = A(:,(end-num_ud):end); 
-        A = shrinkMatrix(A(1:size(A,1),1:size(A,1)));
-        ode(k) = {[A,B(1:size(A,1),:)]};
-    end
-    
     % Trace Prediction (of timepoint i using timepoint i-1)
     for i = (offsetPred+1):size(trace.x)
         % Predict next data point based on ODE
@@ -39,19 +30,8 @@ function [sim_trace] = FnPredictTraceDTL(trace,Mdl,ode)
         if num_ud ~= 0
             curr_u = [sim_ud(i,:)';1];
         end
-        new_x_dot = A * curr_x + B * curr_u;
-
-        % Assume: First rows of A represent integration, thus leave out
-        new_x = [curr_x(1:end,1); new_x_dot((end-num_var+1):end,1)];
-        % Update all derivatives bottom-up with the rectangle integration rule
-        for j = (size(new_x,1)-num_var):-1:1
-            new_x(j,1) = new_x(j,1) + new_x(j+num_var,1) * Ts;
-        end
-        % Pad with derivatives as constant row length needed
-        sim_x(i,:) = [new_x', zeros(1,size(sim_x,2)-size(new_x,1))];
-        for j = (size(new_x,1)+1):size(sim_x,2)
-            sim_x(i,j) = (sim_x(i,j-num_var) - sim_x(i-1,j-num_var)) / Ts;
-        end
+        new_x = A * curr_x + B * curr_u;
+        sim_x(i,:) = new_x';
 
         % Predict next system mode
         sim_state(i,1) = curr_state;
@@ -82,16 +62,4 @@ function [sim_trace] = FnPredictTraceDTL(trace,Mdl,ode)
     sim_trace.chpoints = [1; sim_chp; length(sim_x)];
     sim_trace.labels_trace = sim_labels;
     sim_trace.labels_num = unique(sim_labels);
-end
-
-function A_new = shrinkMatrix(A)
-% sprinkMatrix reduces the matrix A to the minimal quadratic size by
-% deleting zero columns and rows
-    
-    % Find all non-zero entries
-    [row,col] = find(A);
-    % Determine minimal quadratic size
-    len = max(max(row),max(col));
-    % Return result
-    A_new = A(1:len,1:len);
 end

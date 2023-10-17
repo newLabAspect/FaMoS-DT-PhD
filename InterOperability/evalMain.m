@@ -3,7 +3,7 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
     %needed in subfunctions they are listed only there for simplicity
     global num_var num_ud Ts max_deriv useLMIrefine methodCluster methodTraining variedMetricSteps variedMetric offsetCluster
     
-    num = 1; x = []; ud = [];
+    num = 1; x = []; ud = []; xs = [];
     
     addpath(folder);
     % Changepoint Detection only done by proposed algorithm
@@ -29,15 +29,16 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
     for i = allData
         udout = []; % Needed if system with no input variables present
         load(['training', int2str(i),'.mat']);
-        [xout, udout] = FnNormAndDiff(xout, udout, normalization);
+        [xout, udout, xout_shifts] = FnShiftAndDiff(xout, udout, normalization);
         trace_temp = FnDetectChangePoints(xout, udout);
-        % Ground truths for states and changepoints
         trace_temp.true_states = states;
         trace_temp.true_chps = chpoints;
+        trace_temp.xs = xout_shifts;
         trace(num) = trace_temp;
         % All trace values are combined into one array as this form is
         % needed in the clustering stage
         x = [x; trace(num).x];
+        xs = [xs; trace(num).xs];
         ud = [ud; trace(num).ud];
         num = num+1; 
     end
@@ -49,12 +50,12 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
     % Choose which algorithm to use for clustering
     if(methodCluster == 0) % Use DTW for clustering
         useLMIrefine = 0;
-        trace = FnClusterSegsFast(trace, x, ud);
+        trace = FnClusterSegsFast(trace, x, ud, xs);
     elseif(methodCluster == 1) % Use DTW refined by LMIs for clustering
         useLMIrefine = 1;
-        trace = FnClusterSegsFast(trace, x, ud);
+        trace = FnClusterSegsFast(trace, x, ud, xs);
     else % Use LMIs for clustering
-        trace = FnClusterSegs(trace, x, ud);
+        trace = FnClusterSegs(trace, xs, ud);
     end
     
     t_cluster = toc;

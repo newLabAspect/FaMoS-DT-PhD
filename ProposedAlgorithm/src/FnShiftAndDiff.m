@@ -1,11 +1,17 @@
-function [xout, udout] = FnNormAndDiff(xout, udout, norm_coeff)
-% FnNormAndDiff scales the output variables using the normalization
-% coefficients and calculates deriatives up to max_deriv
+function [xout, udout, xout_shifts] = FnShiftAndDiff(xout, udout, norm_coeff)
+% FnNormAndDiff duplicates and shifts output variables for easier discrete
+% state space calculations and calculates deriatives up to max_deriv
     global num_ud num_var max_deriv Ts
 
-    % Normalize outputs using normalization factors
+    % Norm xout
     for j = 1:num_var
         xout(:,j) = 1/norm_coeff(j,1) * xout(:,j);
+    end
+
+    % Calculate shifted duplicates
+    xout_shifts = zeros(size(xout,1),num_var*(1+max_deriv));
+    for shift = 0:max_deriv
+        xout_shifts(:,(1+shift*num_var):((shift+1)*num_var)) = [zeros(shift,num_var); xout(1:(end-shift),1:num_var)];
     end
 
     % Calculate derivatives up to selected degree, structure of xout is
@@ -17,8 +23,9 @@ function [xout, udout] = FnNormAndDiff(xout, udout, norm_coeff)
         end
     end
 
-    % Strip entries from front of outputs bc derivs are not available there
+    % Strip entries from front of outputs bc derivs/shifts are not available there
     xout = xout((max_deriv+1):end,:);
+    xout_shifts = xout_shifts((max_deriv+1):end,:);
 
     % Normalize inputs using normalization factors (Derivs not needed)
     for j = 1:num_ud

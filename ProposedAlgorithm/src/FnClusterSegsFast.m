@@ -1,4 +1,4 @@
-function trace = FnClusterSegsFast(trace, x, ud)
+function trace = FnClusterSegsFast(trace, x, ud, xs)
 % FnClusterSegsFast computes the clusters of the trace using DTW-comparisons 
 % and uses LMI-comparisons to refine the results if selected
     global num_var num_ud offsetCluster
@@ -15,7 +15,7 @@ function trace = FnClusterSegsFast(trace, x, ud)
     [cluster_segs, trace] = computeClustersLocal(trace, combined_metric, segIndex_var);
 
     % Merge local clusters to global clusters, potentially refine with LMI
-    [cluster_global, trace] = computeClustersGlobal(x, ud, trace, cluster_segs, segIndex, segIndex_var);
+    [cluster_global, trace] = computeClustersGlobal(xs, ud, trace, cluster_segs, segIndex, segIndex_var);
 
     % Save global results into trace data structure
     labels_num = unique(cluster_global(:,1));
@@ -383,7 +383,7 @@ function [cluster_segs, trace] = computeClustersLocal(trace, combined_metric, se
     end
 end
 
-function [cluster_global, trace] = computeClustersGlobal(x,ud,trace, cluster_segs, segIndex, segIndex_var)
+function [cluster_global, trace] = computeClustersGlobal(xs,ud,trace, cluster_segs, segIndex, segIndex_var)
 % computeClustersGlobal returns global clusters by merging local clusters
 % to global clusters by considering all occuring combinations of local cluster ids.
     global num_var num_ud useLMIrefine
@@ -422,6 +422,6 @@ function [cluster_global, trace] = computeClustersGlobal(x,ud,trace, cluster_seg
 
     %Use LMI to possibly merge incorrectly split-up clusters
     if (useLMIrefine)
-        cluster_global = refineClustersLMI(x,ud,cluster_global,segIndex);
+        cluster_global = refineClustersLMI(xs,ud,cluster_global,segIndex);
     end
 end
