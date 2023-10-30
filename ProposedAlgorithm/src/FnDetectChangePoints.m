@@ -1,4 +1,4 @@
-function trace = FnDetectChangePoints(xout, udout)
+function trace = FnDetectChangePoints(xout, udout, xout_shifts)
 % FnDetectChangePoints returns local and global changepoints present in
 % input and output traces
 %   A sliding window approach, utilizing the euclidean distance between
@@ -17,7 +17,7 @@ function trace = FnDetectChangePoints(xout, udout)
         chpoints = union(chpoints, new_chp);
         % Add newly discovered changepoints to local set of changepoints
         % (one set per output variable)
-        chp_var(i) = {new_chp};
+        chp_var(i) = {sort(new_chp)};
     end
     % Repeat for input variables but only on original trace
     for i = 1:num_ud
@@ -28,10 +28,11 @@ function trace = FnDetectChangePoints(xout, udout)
     
     % Filter changepoints given close proximity while keeping entries
     % in global and local changepoint set consistent
-    [xout,udout,chpoints,chp_var] = filterChangePoints(xout, udout, chpoints, chp_var);
+    [xout,udout,xout_shifts,chpoints,chp_var] = filterChangePoints(xout, udout, xout_shifts, chpoints, chp_var);
 
     % Create trace datastructure
     trace.x = xout;
+    trace.xs = xout_shifts;
     trace.chpoints = chpoints;
     trace.chpoints_per_var = chp_var;
     trace.ud = udout;
@@ -100,11 +101,11 @@ function locs = findChangePoints(xout,depth,starting,ending,max_depth)
     % Start and end of trace are also changepoints, i.e., add them to set
     % of changepoints if this is the top-most function call
     if depth == 0
-        locs = union(1,[locs; length(der)]);
+        locs = [1; locs; length(der)];
     end
 end
 
-function [xout,udout,chpoints,chp_var] = filterChangePoints(xout, udout, chpoints, chp_var)
+function [xout,udout,xout_shifts,chpoints,chp_var] = filterChangePoints(xout, udout, xout_shifts, chpoints, chp_var)
 % filterChangePoints returns xout, udout and the local and global 
 % changepoint set after applying some filtering rules
 %   Changepoints that are visible on mutliple output variables and thus 
@@ -118,6 +119,7 @@ function [xout,udout,chpoints,chp_var] = filterChangePoints(xout, udout, chpoint
     % Remove last segment if too short
     if(chpoints(end,1)-chpoints(end-1,1) < 2 * windowSize)
         xout = xout(1:chpoints(end-1,1),:);
+        xout_shifts = xout_shifts(1:chpoints(end-1,1),:);
         if num_ud ~= 0
             udout = udout(1:chpoints(end-1,1),:);
         end

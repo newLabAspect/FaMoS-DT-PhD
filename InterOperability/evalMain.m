@@ -28,6 +28,8 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
     % Results are written into trace datastructure (incl. ground truths)
     for i = allData
         udout = []; % Needed if system with no input variables present
+        states = [];
+        chpoints = [];
         load(['training', int2str(i),'.mat']);
         [xout, udout, xout_shifts] = FnShiftAndDiff(xout, udout, normalization);
         trace_temp = FnDetectChangePoints(xout, udout);

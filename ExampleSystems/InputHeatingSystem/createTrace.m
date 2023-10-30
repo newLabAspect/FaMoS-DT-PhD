@@ -3,7 +3,7 @@ x_init = [10.0,0.0,0.0; 14.0,0.0,0.0; 18.0,0.0,0.0; 20.0,0.0,0.0; 22.0,0.0,0.0;
           23.0,0.0,0.0; 22.0,0.0,0.0; 24.0,0.0,0.0; 22.5,0.0,0.0; 23.0,0.0,0.0];
 states_init = [1; 1; 1; 1; 1; 1; 2; 2; 2; 2];
 
-for curr = 1:5%length(states_init)
+for curr = 1:10
 
 i = 1;
 t = 0.0;
@@ -13,7 +13,11 @@ chpoints = [i];
 x = x_init(curr, :);
 
 ud = zeros(2001,1);
-ud(1000:end,1) = 1;
+if curr <=5
+    ud(1000:end,1) = 1;
+else
+    ud(1:1000,1) = 1;
+end
 
 while t < 20.0
     if state == 1
@@ -25,9 +29,9 @@ while t < 20.0
     end
 
     state_old = state;
-    if x_ >= 25+4*ud(i,1) && state == 1
+    if x_ >= 25+1*ud(i,1) && state == 1
         state = 2;
-    elseif x_ <= 15+2*ud(i,1) && state == 2
+    elseif x_ <= 15+1*ud(i,1) && state == 2
         state = 1;
     end
 

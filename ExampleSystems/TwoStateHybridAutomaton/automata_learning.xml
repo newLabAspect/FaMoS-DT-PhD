@@ -4,12 +4,12 @@
       <param controlled="true" d1="1" d2="1" dynamics="any" local="false" name="x1" type="real"/>
       <param controlled="true" d1="1" d2="1" dynamics="any" local="false" name="x2" type="real"/>
       <location id="1" name="loc1">
-         <flow>x1' == 0.002504 * x1 + 0.9975 * x2 &amp;
- x2' == 0.5012 * x1 - 0.5038 * x2</flow>
+         <flow>x1' == 1.995 * x1 - 0.995 * x2 + 0.0000000000000001106 &amp;
+ x2' == x1 - 0.0000000000000007034 * x2 + 0.000000000000000102</flow>
       </location>
       <location id="2" name="loc2">
-         <flow>x1' == 0.9976 * x2 - 0.00247 * x1 &amp;
- x2' == -0.4943 * x1 - 0.4714 * x2</flow>
+         <flow>x1' == 1.995 * x1 - 0.9955 * x2 + 0.000007028 &amp;
+ x2' == x1 - 0.0000000000000009069 * x2 - 0.00000000000000000923</flow>
       </location>
       <transition asap="false" bezier="false" source="1" target="2" timedriven="false">
          <guard>-1.232 * x1 + 1.0 &lt; 0.0</guard>

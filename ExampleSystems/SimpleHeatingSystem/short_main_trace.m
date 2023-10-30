@@ -12,7 +12,7 @@ methodTraining = 0; % 0: DTL, 1: PTA
 Ts = 0.01; Time = false;
 % Changepoint detection paras
 windowSize = 10; max_deriv = 3;
-% Up to which derivative to consider in LMI, Automata Learning
+% Up to which shift to consider in LMI, Automata Learning
 % On which derivative to cluster using DTW comparisons
 offsetCluster = 0;
 
@@ -40,10 +40,10 @@ fixedIntervalLength = 1; precisionDTL = 0.0003; useTime = false;
 %% Vary Paras over time
 global variedMetric variedMetricSteps
 variedMetric = 4; % -1: No parameter is varied
-%DTL: 0: precisionDTL 1: trainingSetSize
+%DTL: 4: trainingSetSize
 %PTA: 0: eta 1: lambda 2: gamma 3: toLi 4: trainingSetSize (for low number
 %gamma needs to be lowered otherwise LIs cannot be computed)
-variedMetricSteps = linspace(0.3,0.3,1);
+variedMetricSteps = linspace(0.09,0.09,1);
 
 %% Actual execution
 allData = 1:10;
