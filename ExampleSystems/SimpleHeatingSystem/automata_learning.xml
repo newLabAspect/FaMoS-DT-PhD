@@ -3,10 +3,10 @@
    <component id="ExampleSystems/SimpleHeatingSystem/automata_learning_sys">
       <param controlled="true" d1="1" d2="1" dynamics="any" local="false" name="x1" type="real"/>
       <location id="1" name="loc1">
-         <flow>x1' == 1.006 * x1 - 0.001151</flow>
+         <flow>x1' == 1.006 * x1 - 0.0004494</flow>
       </location>
       <location id="2" name="loc2">
-         <flow>x1' == 1.001 * x1 - 0.005453</flow>
+         <flow>x1' == 1.001 * x1 - 0.005462</flow>
       </location>
       <transition asap="false" bezier="false" source="1" target="2" timedriven="false">
          <guard>-1.008 * x1 + 1.0 &lt; 0.0</guard>
@@ -14,7 +14,7 @@
          <middlepoint/>
       </transition>
       <transition asap="false" bezier="false" source="2" target="1" timedriven="false">
-         <guard>-1.253 * x1 + 1.0 &gt; 0.0</guard>
+         <guard>-1.254 * x1 + 1.0 &gt; 0.0</guard>
          <labelposition/>
          <middlepoint/>
       </transition>

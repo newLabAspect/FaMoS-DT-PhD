@@ -6,12 +6,12 @@ addpath(['InterOperability']);
 
 %% General paras
 global num_var num_ud Ts Time methodCluster methodTraining windowSize max_deriv offsetCluster
-num_var = 6; num_ud = 6;
+num_var = 6; num_ud = 0;
 methodCluster = 0; % 0: DTW, 1: DTW & LMI, 2: LMI
 methodTraining = 0; % 0: DTL, 1: PTA
-Ts = 0.22; Time = false;
+Ts = 0.055; Time = false;
 % Changepoint detection paras
-windowSize = 10; max_deriv = 3;
+windowSize = 6; max_deriv = 1;
 % Up to which derivative to consider in LMI, Automata Learning
 % On which derivative to cluster using DTW comparisons
 offsetCluster = 0;

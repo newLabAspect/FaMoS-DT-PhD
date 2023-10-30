@@ -1,4 +1,4 @@
-function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFalse,sim_trace,confDeg] = traceMain(allData,evalData,folder)
+function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFalse,sim_trace,confAll] = traceMain(allData,evalData,folder)
     %only global vars needed for this top level program are listed here, if 
     %needed in subfunctions they are listed only there for simplicity
     global num_var num_ud Ts max_deriv useLMIrefine methodCluster methodTraining variedMetricSteps variedMetric offsetCluster
@@ -25,10 +25,9 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
         udout = []; % Needed if system with no input variables present
         load(['training', int2str(i),'.mat']);
         [xout, udout, xout_shifts] = FnShiftAndDiff(xout, udout, normalization);
-        trace_temp = FnDetectChangePoints(xout, udout);
+        trace_temp = FnDetectChangePoints(xout, udout, xout_shifts);
         trace_temp.true_states = states;
         trace_temp.true_chps = chpoints;
-        trace_temp.xs = xout_shifts;
         trace(num) = trace_temp;
         %all traces are appended (needed for clustering in that form)
         x = [x; trace(num).x];
@@ -73,6 +72,7 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
         
         correctAll = [];
         falseAll = [];
+        confAll = [];
         t_train = [];
 
         %compute eval data
@@ -99,10 +99,20 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
                 count= count + 1;
             end
             
+            % Only nedded for ODE estimation
+            trace_train_short = trace(setdiff(allData,evalData));
+            max_len_trace = 0;
+            for p = 1:length(trace_train_short)
+                max_len_trace = max_len_trace + size(trace_train_short(p).x,1);
+            end
+
             %vary selected metric
-            if(variedMetric == 1)
+            if(variedMetric == 4)
                 X = X(1:round(variedMetricSteps(1,j)*size(X,1),0),:);
                 Y = Y(1:round(variedMetricSteps(1,j)*size(Y,1),0),:);
+                % Only nedded for ODE estimation
+                used_len = round(variedMetricSteps(1,j) * max_len_trace,0);
+                trace_train_short = shortenTraces(trace,used_len,allData,evalData);
             end
 
             [Mdl,impure_leaves,num_nodes,learn_time] = FnBuildDT(X,Y);
@@ -122,16 +132,16 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
             end
             correctAll = [correctAll; correct];
             falseAll = [falseAll; false];
+            %Prediction
+            ode = FnEstODE(trace_train_short);
+            [sim_trace] = FnPredictTraceDTL(trace(evalData(1)),Mdl,ode);
+            [confDeg] = FnConformanceTrace(trace(evalData(1)),sim_trace);
+            confAll = [confAll; confDeg];
             if(variedMetric == -1)
                 break;
             end
             disp([num2str(round(j/length(variedMetricSteps)*100,2)),' % done']);
         end
-
-        %Prediction (TODO: generalize for systems with multiple output vars)
-        ode = FnEstODE(trace(setdiff(allData,evalData)));
-
-        [sim_trace] = FnPredictTraceDTL(trace(evalData(1)),Mdl,ode);
 
     else % Use PTA for training
         global eta lambda gamma tolLI
@@ -141,6 +151,7 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
         end
 
         correctAll = [];
+        confAll = [];
         falseAll = [];
         t_train = [];
 
@@ -163,40 +174,7 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
                 tolLI = variedMetricSteps(1,j);
             elseif(variedMetric == 4)
                 used_len = round(variedMetricSteps(1,j) * max_len_trace,0);
-                trace_train_short = trace(setdiff(allData,evalData));
-                labels_num = [];
-                for p = 1:length(trace_train_short)
-                    if(used_len == 0)
-                        % all remaining trace entries need to be deleted
-                        trace_train_short(p:length(trace_train_short)) = [];
-                        break;
-                    elseif(used_len < length(trace_train_short(p).x))
-                        % trim x, ud entries out of trace
-                        trace_train_short(p).x = trace_train_short(p).x(1:used_len,:);
-                        if num_ud ~= 0
-                            trace_train_short(p).ud = trace_train_short(p).ud(1:used_len,:);
-                        end
-                        % trim changepoints out of trace
-                        toDelete = find(trace_train_short(p).chpoints >= used_len);
-                        trace_train_short(p).chpoints(toDelete) = [];
-                        % trim cluster ids out of trace
-                        trace_train_short(p).labels_trace = trace_train_short(p).labels_trace(1:length(trace_train_short(p).chpoints));
-                        % add ending chpoint to trace
-                        trace_train_short(p).chpoints = [trace_train_short(p).chpoints; used_len];
-                        % add terminating 0 to cluster ids
-                        trace_train_short(p).labels_trace = [trace_train_short(p).labels_trace;0];
-                        % trace data structure is completed
-                        used_len = 0;
-                    else
-                        % trace data structure still needs entries to achieve target size
-                        used_len = used_len - length(trace_train_short(p).x);
-                    end
-                    %to exclude to trailing 0
-                    labels_num = unique([labels_num; trace_train_short(p).labels_trace(1:(end-1))]);
-                end
-                for p = 1:length(trace_train_short)
-                    trace_train_short(p).labels_num = labels_num;
-                end
+                trace_train_short = shortenTraces(trace,used_len,allData,evalData);
             end
 
             if(j == 1 || variedMetric ~= 3)
@@ -231,16 +209,15 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
             [correct,false] = FnEvaluateHA(trace(evalData),conditions,tolLI);
             correctAll = [correctAll; correct];
             falseAll = [falseAll; false];
+            [sim_trace] = FnPredictTraceHA(trace(evalData(1)),conditions,ode);
+            [confDeg] = FnConformanceTrace(trace(evalData(1)),sim_trace);
+            confAll = [confAll; confDeg];
             if(variedMetric == -1)
                 break;
             end
             disp([num2str(round(j/length(variedMetricSteps)*100,2)),' % done']);
-        end
-
-        [sim_trace] = FnPredictTraceHA(trace(evalData(1)),conditions,ode);
+        end 
     end
-
-    [confDeg] = FnConformanceTrace(trace(evalData(1)),sim_trace);
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -268,4 +245,43 @@ function pta_trace_new = pta_filter(pta_trace)
         end
     end
     pta_trace_new = pta_trace;
+end
+
+function trace_train_short = shortenTraces(trace,used_len,allData,evalData)
+    global num_var num_ud
+    
+    trace_train_short = trace(setdiff(allData,evalData));
+    labels_num = [];
+    for p = 1:length(trace_train_short)
+        if(used_len == 0)
+            % all remaining trace entries need to be deleted
+            trace_train_short(p:length(trace_train_short)) = [];
+            break;
+        elseif(used_len < length(trace_train_short(p).x))
+            % trim x, ud entries out of trace
+            trace_train_short(p).x = trace_train_short(p).x(1:used_len,:);
+            if num_ud ~= 0
+                trace_train_short(p).ud = trace_train_short(p).ud(1:used_len,:);
+            end
+            % trim changepoints out of trace
+            toDelete = find(trace_train_short(p).chpoints >= used_len);
+            trace_train_short(p).chpoints(toDelete) = [];
+            % trim cluster ids out of trace
+            trace_train_short(p).labels_trace = trace_train_short(p).labels_trace(1:length(trace_train_short(p).chpoints));
+            % add ending chpoint to trace
+            trace_train_short(p).chpoints = [trace_train_short(p).chpoints; used_len];
+            % add terminating 0 to cluster ids
+            trace_train_short(p).labels_trace = [trace_train_short(p).labels_trace;0];
+            % trace data structure is completed
+            used_len = 0;
+        else
+            % trace data structure still needs entries to achieve target size
+            used_len = used_len - length(trace_train_short(p).x);
+        end
+        %to exclude to trailing 0
+        labels_num = unique([labels_num; trace_train_short(p).labels_trace(1:(end-1))]);
+    end
+    for p = 1:length(trace_train_short)
+        trace_train_short(p).labels_num = labels_num;
+    end
 end

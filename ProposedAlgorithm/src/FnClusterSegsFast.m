@@ -287,8 +287,8 @@ function cluster_global = refineClustersLMI(x,ud,cluster_global,segIndex)
         if(isempty(posi))
             continue;
         end
-        % Select longest segment
-        [~,posTemp] = max(len_segs(posi,1));
+        % Select long enough segment, but not too long as comp. expensive
+        [~,posTemp] = min(abs(len_segs(posi,1)-min([10*windowSize,max(len_segs(posi,1))])));
         posi = posi(posTemp,1);
 
         start_i = segIndex(posi,1)+winlen;
@@ -313,7 +313,7 @@ function cluster_global = refineClustersLMI(x,ud,cluster_global,segIndex)
             if(isempty(posj))
                 continue;
             end
-            [~,posTemp] = max(len_segs(posj,1));
+            [~,posTemp] = min(abs(len_segs(posj,1)-min([10*windowSize,max(len_segs(posj,1))])));
             posj = posj(posTemp,1);
 
             start_j = segIndex(posj,1)+winlen;
