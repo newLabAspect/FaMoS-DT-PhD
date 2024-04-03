@@ -1,5 +1,19 @@
 # FaMoS – Fast Model Learning for Hybrid Cyber-Physical Systems using Decision Trees
 
+This repository provides the code for the paper
+
+_Swantje Plambeck, Aaron Bracht, Nemanja Hranisavljevic, and Goerschwin Fey. Famos - fast model learning for hybrid cyber-physical systems using decision trees. In International Conference on Hybrid Systems: Computation and Control (HSCC), 2024_
+
+Bibtex entry
+```
+@inproceedings{HSCC2024,
+  author          = {Swantje Plambeck and Aaron Bracht and Nemanja Hranisavljevic and Goerschwin Fey},
+  title           = {FaMoS - Fast Model Learning for Hybrid Cyber-Physical Systems using Decision Trees},
+  booktitle       = {International Conference on Hybrid Systems: Computation and Control (HSCC)},
+  year            = {2024},
+}
+```
+
 ## Prerequisites
 
 The following MATLAB toolboxes (an of course MATLAB R2023b) are required to use the framework (as of October 2023):
