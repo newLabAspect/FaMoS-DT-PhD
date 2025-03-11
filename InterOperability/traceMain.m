@@ -91,12 +91,10 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
             %compute maximal training data
             X = [];
             Y = [];
-            count = 1;
             for i = setdiff(allData,evalData)
-                [Xnew,Ynew,states] = FnTraceToTrainingData(trace(count));
+                [Xnew,Ynew,states] = FnTraceToTrainingData(trace(i));
                 X = [X; Xnew];
                 Y = [Y; Ynew];
-                count= count + 1;
             end
             
             % Only nedded for ODE estimation
