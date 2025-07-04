@@ -1,4 +1,4 @@
-function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFalse,sim_trace,confAll] = traceMain(allData,evalData,folder)
+function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFalse,sim_trace,confAll, omega_seg] = traceMain(allData,evalData,folder)
     %only global vars needed for this top level program are listed here, if 
     %needed in subfunctions they are listed only there for simplicity
     global num_var num_ud Ts max_deriv useLMIrefine methodCluster methodTraining variedMetricSteps variedMetric offsetCluster
@@ -7,8 +7,8 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
     
     addpath(folder);
     % Changepoint Detection only done by proposed algorithm
-    addpath(['ProposedAlgorithm', filesep, 'src']);
-    addpath(['HAutLearn', filesep, 'src']);
+    addpath(['../../../../ProposedAlgorithm', filesep, 'src']);
+    addpath(['../../../../HAutLearn', filesep, 'src']);
     
     %% Changepoint determination and trace setup
     normalization = zeros(num_var+num_ud,1);
@@ -59,10 +59,12 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
     % Eval clusters
     ClusterCorrect = 0;
     ClusterFalse = 0;
+    omega_seg = 0.0;
     for i = 1:length(trace)
         [cTemp, fTemp] = FnEvalCluster(trace(i).labels_trace,trace(i).true_states,trace(i).true_chps);
         ClusterCorrect = ClusterCorrect + cTemp;
         ClusterFalse = ClusterFalse + fTemp;
+        omega_seg = omega_seg + FnEvalChangePoints(trace(i).chpoints, trace(i).true_chps);
     end
     
     %% Training and short Eval
@@ -97,7 +99,7 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
                 Y = [Y; Ynew];
             end
             
-            % Only nedded for ODE estimation
+            % Preparation of evaluation trace
             trace_train_short = trace(setdiff(allData,evalData));
             max_len_trace = 0;
             for p = 1:length(trace_train_short)
@@ -114,7 +116,11 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
             end
 
             [Mdl,impure_leaves,num_nodes,learn_time] = FnBuildDT(X,Y);
+            ode = FnEstODE(trace);
             t_train = [t_train; toc];
+            [mse, sim_trace] = FnEvalFlowAccuracy(trace(evalData(1)), ode);
+            gt_trace = trace(evalData(1));
+            save("model", "Mdl","ode", "sim_trace", "gt_trace");
         
             % Actual Eval
             correct = 0;
@@ -131,7 +137,6 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
             correctAll = [correctAll; correct];
             falseAll = [falseAll; false];
             %Prediction
-            ode = FnEstODE(trace_train_short);
             [sim_trace] = FnPredictTraceDTL(trace(evalData(1)),Mdl,ode);
             [confDeg] = FnConformanceTrace(trace(evalData(1)),sim_trace);
             confAll = [confAll; confDeg];

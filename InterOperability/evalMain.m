@@ -23,6 +23,7 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
             normalization(num_var+j,1) = max(normalization(num_var+j,1),max(abs(udout(:,j))));
         end
     end
+    normalization
 
     % Carry out normalization, compute derivatives and detect changepoints
     % Results are written into trace datastructure (incl. ground truths)
@@ -32,7 +33,7 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
         chpoints = [];
         load(['training', int2str(i),'.mat']);
         [xout, udout, xout_shifts] = FnShiftAndDiff(xout, udout, normalization);
-        trace_temp = FnDetectChangePoints(xout, udout);
+        trace_temp = FnDetectChangePoints(xout, udout, xout_shifts);
         trace_temp.true_states = states;
         trace_temp.true_chps = chpoints;
         trace_temp.xs = xout_shifts;
