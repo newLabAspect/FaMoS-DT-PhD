@@ -1,7 +1,7 @@
-function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFalse,sim_trace,confAll, omega_seg] = traceMain(allData,evalData,folder)
+function [correctAll,falseAll,t_seg,t_cluster,t_charac,t_extract,trace,ClusterCorrect,ClusterFalse,sim_trace,confAll, mse, omega_seg, omega_group] = traceMain(allData,evalData,folder)
     %only global vars needed for this top level program are listed here, if 
     %needed in subfunctions they are listed only there for simplicity
-    global num_var num_ud Ts max_deriv useLMIrefine methodCluster methodTraining variedMetricSteps variedMetric offsetCluster
+    global num_var num_ud useLMIrefine methodCluster methodTraining variedMetricSteps variedMetric offsetCluster
     
     num = 1; x = []; ud = []; xs = [];
     
@@ -21,12 +21,15 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
             normalization(num_var+j,1) = max(normalization(num_var+j,1),max(abs(udout(:,j))));
         end
     end
+    num_states = 0;
+    tic
     for i = allData
         udout = []; % Needed if system with no input variables present
         load(['training', int2str(i),'.mat']);
         [xout, udout, xout_shifts] = FnShiftAndDiff(xout, udout, normalization);
         trace_temp = FnDetectChangePoints(xout, udout, xout_shifts);
         trace_temp.true_states = states;
+        num_states = max([num_states; states]);
         trace_temp.true_chps = chpoints;
         trace(num) = trace_temp;
         %all traces are appended (needed for clustering in that form)
@@ -35,6 +38,7 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
         ud = [ud; trace(num).ud];
         num = num+1; 
     end
+    t_seg = toc;
     
     %% Determine clustered trace segments
     
@@ -88,8 +92,6 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
         end
             
         for j = 1:length(variedMetricSteps)
-
-            tic;
             %compute maximal training data
             X = [];
             Y = [];
@@ -114,13 +116,34 @@ function [correctAll,falseAll,t_cluster,t_train,trace,ClusterCorrect,ClusterFals
                 used_len = round(variedMetricSteps(1,j) * max_len_trace,0);
                 trace_train_short = shortenTraces(trace,used_len,allData,evalData);
             end
-
+            
+            tic
             [Mdl,impure_leaves,num_nodes,learn_time] = FnBuildDT(X,Y);
+            t_extract = toc;
+            tic
             ode = FnEstODE(trace);
-            t_train = [t_train; toc];
-            [mse, sim_trace] = FnEvalFlowAccuracy(trace(evalData(1)), ode);
-            gt_trace = trace(evalData(1));
-            save("model", "Mdl","ode", "sim_trace", "gt_trace");
+            t_charac = toc;
+            mse_vec = zeros(length(evalData),num_var*(1+offsetCluster));
+            omega_group = 0;
+            mse_per_group = [];
+            for i = 1:length(evalData)
+                [mse_vec(i,:), traces(i), mpg, gs] = FnEvalFlowAccuracy(trace(evalData(i)), ode);
+                for g = 1:length(mpg)
+                    if length(mse_per_group) < g
+                        mse_per_group(g) = mpg(g);
+                        group_sizes(g) =  gs(g);
+                    else
+                        mse_per_group(g) = mse_per_group(g) + mpg(g);
+                        group_sizes(g) = group_sizes(g) + gs(g);
+                    end
+                end
+            end
+
+            omega_group = sum(mse_per_group .* group_sizes) / sum(group_sizes) * (1 + abs(num_states - length(mse_per_group)));
+
+            mse = mean(mse_vec);
+            gt_trace = trace(evalData);
+            save("model", "Mdl", "ode", "traces", "gt_trace", "mse_vec");
         
             % Actual Eval
             correct = 0;
