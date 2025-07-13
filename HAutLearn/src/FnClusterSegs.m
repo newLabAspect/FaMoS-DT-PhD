@@ -16,12 +16,12 @@ function trace = FnClusterSegs(trace, x, ud)
     labels = FnIndxarrange(mix_label, index);
     labels_num = unique(labels(:,2));
     cluster_segs = sortrows(labels,1); %
- %%   
+ 
     for i=1:length(trace)
         chpoints = trace(i).chpoints;
         len_segs = length(chpoints)-1;
-        trace(i).labels_num = labels_num;
         trace(i).labels_trace = cluster_segs(1:len_segs,2);
+        trace(i).labels_num = unique(cluster_segs(1:len_segs,2));
         cluster_segs(1:len_segs,:) = [];
     end
 end

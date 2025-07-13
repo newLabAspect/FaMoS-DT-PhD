@@ -144,10 +144,8 @@ function [xout,udout,xout_shifts,chpoints,chp_var] = filterChangePoints(xout, ud
             [~,ind] = min(abs(chpoints-current_chps(j,1)));
             current_chps(j,1) = chpoints(ind,1);
         end
-        % Remove possible duplicate at end from previous step
-        if(current_chps(end-1,1) == current_chps(end,1))
-            current_chps = current_chps(1:(end-1),1);
-        end
+        % Remove possible duplicates from previous step
+        current_chps = unique(current_chps);
         chp_var(i) = {current_chps};
     end
 end

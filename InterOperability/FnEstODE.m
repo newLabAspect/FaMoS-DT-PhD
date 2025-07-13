@@ -39,11 +39,10 @@ for label = 1:len_labels
     % ODE datastructure is A appended by B. As different ODE degrees
     % are supported, A and B are extended to their maximal sizes
     
-    % No conversion to a continous model, denoted by -1s in ODE
+    % No conversion to a continuous model, denoted by -1s in ODE
     A_Bu = mrdivide(x_seg_plus,[x_seg;ud_seg]);
-    dA = A_Bu(:,1:num_vars);
-    dB = A_Bu(:,num_vars+1:end);
-    % -1 indicate the ode is descrete and is used for variable reset
-    ode(label) = {[dA, dB]};
+    %dA = A_Bu(:,1:num_vars);
+    %dB = A_Bu(:,num_vars+1:end);
+    ode(label) = {A_Bu}; %{[dA, dB]};
 end
 end

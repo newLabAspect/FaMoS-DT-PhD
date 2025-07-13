@@ -5,6 +5,7 @@ global num_var num_ud Time
 
 % first two are the source state and destination state, last two is a changepoint
 trans = []; 
+LI = [];
 for i = 1:length(trace)
     chpoints = trace(i).chpoints;
     labels_trace = trace(i).labels_trace;
@@ -51,10 +52,10 @@ for i = 1:size(state_trans,1)
     end
     [wb_temp, inlayer_temp] = FnEstLI(points, num_vars,iter,threshDist,inNum);
     if isempty(wb_temp)
-%         LI(i).states = states;
-%         LI(i).points = points;
-%         LI(i).inlayer = {id_chpoint};
-%         LI(i).wb = {zeros(num_var+2,1)};
+        LI(i).states = states;
+        LI(i).points = points;
+        LI(i).inlayer = {id_chpoint};
+        LI(i).wb = zeros(num_var+2,1);
         continue;
     end
     [wb, inlayer]= FnInequalitySymbol(id_chpoint, wb_temp, inlayer_temp, trace, points);
