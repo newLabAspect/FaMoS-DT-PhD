@@ -20,8 +20,11 @@ for n = 1:length(trace)
         num = num+1;
     end
 end
-
-pta_trace_new = get_pta_trace(1, seg_ids, pta_trace_set);
+if length(trace) == 1
+    pta_trace_new = pta_trace_set(1);
+else
+    pta_trace_new = get_pta_trace(1, seg_ids, pta_trace_set);
+end
 for n = 2:(length(seg_ids)-1)
     pta_trace2 = get_pta_trace(n, seg_ids, pta_trace_set);
     pta_trace_new = combine_pta(pta_trace_new, pta_trace2, pta_trace_set);

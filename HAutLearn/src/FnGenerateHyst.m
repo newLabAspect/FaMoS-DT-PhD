@@ -62,7 +62,7 @@ for i_loc = 1:numLoc
     if id2lables(i_loc)==0 
         flow{i_loc} = modesToFlows{length(ode)+1};
     else
-        flow{i_loc} = modesToFlows{id2lables(i_loc)};
+        flow{i_loc} = modesToFlows{i_loc};
     end
     
     loc = ha.createMode(locName{i_loc},invariant{i_loc},flow{i_loc});

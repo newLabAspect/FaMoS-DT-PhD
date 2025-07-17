@@ -30,7 +30,7 @@ function [mse, sim_trace, mse_per_group, group_sizes] = FnEvalFlowAccuracy(trace
     for j = 1:length(chpoints)-1
         for i = chpoints(j):(chpoints(j+1)-1)
             % Predict next data point based on ODE
-            curr_state = states(j);
+            curr_state = find(trace.labels_num == states(j));
             A = cell2mat(ode(curr_state));
             B = A(1:size(A,1),(size(A,1)+1):end);
             A = A(1:size(A,1),1:size(A,1));

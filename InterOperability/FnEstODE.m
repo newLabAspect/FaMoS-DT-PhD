@@ -13,7 +13,7 @@ for label = 1:len_labels
     % cluster id to save state (and input) vector
     for j = 1:length(trace)
         labels_trace = trace(j).labels_trace;
-        idx = find(labels_trace == label);
+        idx = find(labels_trace == trace(1).labels_num(label));
         x = trace(j).xs(:,1:num_vars);
         ud = trace(j).ud(:,1:num_ud);
          

@@ -22,7 +22,8 @@ function [sim_trace] = FnPredictTraceHA(trace,conditions,ode)
     % Trace Prediction (of timepoint i using timepoint i-1)
     for i = (offsetPred+1):size(trace.x)
         % Predict next data point based on ODE
-        A = cell2mat(ode(curr_state));
+        state_id = find(trace.labels_num == curr_state);
+        A = cell2mat(ode(state_id));
         B = A(1:size(A,1),(size(A,1)+1):end);
         A = A(1:size(A,1),1:size(A,1));
         curr_x = sim_x(i-1,1:size(A,1))';
