@@ -17,3 +17,5 @@
 *.auxlock
 **/slprj
 **/temp
+PhDExperiments/resources/*
+PhDExperiments/Results/*

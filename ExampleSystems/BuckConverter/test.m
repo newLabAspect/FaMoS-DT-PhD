@@ -1,14 +1,15 @@
-%% Intital Setup and parameter settings
-clc
-clear
-
-addpath(['InterOperability']);
+addpath(['../../../../InterOperability']);
+false = 0;
 
 %% General paras
 global num_var num_ud Ts Time methodCluster methodTraining windowSize max_deriv offsetCluster
 num_var = 2; num_ud = 0;
 methodCluster = 2; % 0: DTW, 1: DTW & LMI, 2: LMI
-methodTraining = 1; % 0: DTL, 1: PTA
+if methodCluster == 2
+    methodTraining = 1;
+else
+    methodTraining = 0; % 0: DTL, 1: PTA
+end
 Ts = 1E-5; Time = false;
 % Changepoint detection paras
 windowSize = 10; max_deriv = 1;
@@ -37,15 +38,10 @@ tolLI = 0.0002; %tolerance in evaluation of LIs
 global fixedIntervalLength precisionDTL useTime
 fixedIntervalLength = 1; precisionDTL = 0.0001; useTime = false;
 
-%% Vary Paras over time
-global variedMetric variedMetricSteps
-variedMetric = 4; % -1: No parameter is varied
-%DTL: 4: trainingSetSize
-%PTA: 0: eta 1: lambda 2: gamma 3: toLi 4: trainingSetSize
-variedMetricSteps = linspace(0.28,0.28,1);
-
 %% Actual execution
-allData = 1:10;
-evalData = [1,3,4,5,6,7,8];
+allData = 1:2;
+evalData = [2];
 
-[correct,false,t_cluster,t_train,trace,ClusterCorrect,ClusterFalse,pred_trace,confDeg] = traceMain(allData,evalData,['ExampleSystems', filesep, 'BuckConverter']);
+[t_seg,t_group,t_charac,t_extract, mse_vars, omega_seg, omega_group] = traceMain(allData,evalData,['../../../../ExampleSystems', filesep, 'BuckConverter']);
+mse_x1 = mse_vars(1);
+mse_x2 = mse_vars(2);
