@@ -1,4 +1,4 @@
-function [t_seg,t_cluster,t_charac,t_extract, mse, omega_seg, omega_group] = traceMain(allData,evalData,folder)
+function [t_seg,t_cluster,t_charac,t_extract, mse, omega_seg, omega_group, normalization] = traceMain(allData,evalData,folder)
     %only global vars needed for this top level program are listed here, if 
     %needed in subfunctions they are listed only there for simplicity
     global num_var num_ud useLMIrefine methodCluster methodTraining offsetCluster
@@ -68,9 +68,8 @@ function [t_seg,t_cluster,t_charac,t_extract, mse, omega_seg, omega_group] = tra
     % Remove changepoints that are not associated with a system mode switch
     trace = FnCleanChangePoints(trace);
     
-    save("trace_before_ode", "trace");
     tic
-    ode = FnEstODE(trace(trainData));
+    [ode, all_labels] = FnEstODE(trace(trainData));
     t_charac = toc;
 
     %Cluster and Characterization Eval
@@ -121,7 +120,7 @@ function [t_seg,t_cluster,t_charac,t_extract, mse, omega_seg, omega_group] = tra
         end
         gt_traces = trace(evalData);
         mse = mean(mse_vec,1);
-        save(strcat("model"), "Mdl", "ode", "traces", "gt_traces", "mse_vec");
+        save(strcat("model"), "Mdl", "ode", "traces", "gt_traces", "mse_vec", "normalization");
 
     else % Use PTA for training
         global eta lambda gamma
@@ -165,7 +164,7 @@ function [t_seg,t_cluster,t_charac,t_extract, mse, omega_seg, omega_group] = tra
         for i = 1:length(evalData)
             gt_trace = trace(evalData(i));
             %Prediction
-            [sim_trace] = FnPredictTraceHA(gt_trace,conditions,ode);
+            [sim_trace] = FnPredictTraceHA(gt_trace,conditions,ode,all_labels);
             for j = 1:size(mse_vec,2)
                 mse_vec(i,j) = mean((sim_trace.x(:,j)-gt_trace.xs(:,j)).^2);
             end
@@ -173,6 +172,6 @@ function [t_seg,t_cluster,t_charac,t_extract, mse, omega_seg, omega_group] = tra
         end
         gt_traces = trace(evalData);
         mse = mean(mse_vec,1);
-        save("model", "conditions", "ode", "traces", "gt_traces", "mse_vec");
+        save("model", "conditions", "ode", "traces", "gt_traces", "mse_vec", "normalization");
     end
 end

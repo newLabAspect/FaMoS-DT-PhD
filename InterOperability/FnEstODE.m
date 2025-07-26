@@ -1,9 +1,14 @@
-function ode = FnEstODE(trace)
+function [ode, all_labels] = FnEstODE(trace)
 % FnEstODE estimates the ODE for each cluster in the trace datastructure
-global Ts num_var num_ud offsetCluster
+global  num_var num_ud offsetCluster
 
 % Iterate over all clusters
-len_labels = length(trace(1).labels_num);
+all_labels = [];
+for j = 1:length(trace)
+    all_labels = union(all_labels,unique(trace(j).labels_trace));
+end
+all_labels = sort(all_labels);
+len_labels = length(all_labels);
 num_vars = num_var*(1+offsetCluster); 
 for label = 1:len_labels
     x_seg = [];
@@ -12,8 +17,7 @@ for label = 1:len_labels
     % Extract all segments from all traces associated with current
     % cluster id to save state (and input) vector
     for j = 1:length(trace)
-        labels_trace = trace(j).labels_trace;
-        idx = find(labels_trace == trace(1).labels_num(label));
+        idx = find(trace(j).labels_trace == all_labels(label));
         x = trace(j).xs(:,1:num_vars);
         ud = trace(j).ud(:,1:num_ud);
          

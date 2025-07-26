@@ -1,4 +1,4 @@
-function [sim_trace] = FnPredictTraceHA(trace,conditions,ode)
+function [sim_trace] = FnPredictTraceHA(trace,conditions,ode,all_labels)
 % FnPredictTraceHA uses the HA-model of the system and inital conditions of
 % a preexisting trace to create a trace prediction
     global num_var num_ud tolLI Ts offsetCluster
@@ -22,7 +22,7 @@ function [sim_trace] = FnPredictTraceHA(trace,conditions,ode)
     % Trace Prediction (of timepoint i using timepoint i-1)
     for i = (offsetPred+1):size(trace.x)
         % Predict next data point based on ODE
-        state_id = find(trace.labels_num == curr_state);
+        state_id = find(all_labels == curr_state);
         A = cell2mat(ode(state_id));
         B = A(1:size(A,1),(size(A,1)+1):end);
         A = A(1:size(A,1),1:size(A,1));
