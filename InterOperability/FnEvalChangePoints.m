@@ -20,6 +20,9 @@ function [omega_seg] = FnEvalChangePoints(chps, truth_chps)
     
     % Find best matches for each ground truth switch
     for i = 1:length(truth_chps)
+        if length(chps) == 0
+            continue
+        end
         % Find the switch with minimum distance
         distances = abs(chps - truth_chps(i));
         [~, min_idx] = min(distances);
@@ -52,8 +55,8 @@ function [omega_seg] = FnEvalChangePoints(chps, truth_chps)
     % Calculate final deviation
     for i = 1:length(matching)
         if ~isnan(matching(i))
-            deviation = (deviation + abs(chps(matching(i)) - truth_chps(i))) / length(chps);
+            deviation = deviation + (abs(chps(matching(i)) - truth_chps(i)));
         end
     end
-    omega_seg = deviation;
+    omega_seg = deviation / max(1,length(chps));
 end

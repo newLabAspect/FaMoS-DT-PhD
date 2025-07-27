@@ -77,7 +77,7 @@ function locs = findChangePoints(xout,depth,starting,ending,max_depth)
     dist = computeDistance(der);
 
     % Peaks in distance indicate change in dynamic behavior (introduce para for minimal peak height?)
-    [~,locsDist] = findpeaks(dist,"MinPeakHeight",5);
+    [~,locsDist] = findpeaks(dist); %,"MinPeakHeight",6);
     % Convert index on interval to index on trace
     locsHere = locsDist+starting-1;
     locsHere = sort(locsHere);

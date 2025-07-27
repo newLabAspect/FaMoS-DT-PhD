@@ -17,7 +17,7 @@ function [trace] = FnCleanChangePoints(trace)
         % Remove intermediate changepoint (locally) on each variable
         for j = 1:length(trace(i).chpoints_per_var)
             chps = cell2mat(trace(i).chpoints_per_var(j,1));
-            [~,indx] = ismember(del_chps,chps);
+            [~,indx] = ismember(chps,del_chps);
             % Zero indicates that no occurence was found, thus remove from
             % index vector
             indx = find(indx>0);

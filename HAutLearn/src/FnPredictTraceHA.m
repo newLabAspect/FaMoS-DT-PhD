@@ -16,6 +16,9 @@ function [sim_trace] = FnPredictTraceHA(trace,conditions,ode,all_labels)
     lastSwitch = trace.chpoints(indxLastSwitch,1);
     sim_state(1,1) = trace.labels_trace(indxLastSwitch,1);
     curr_state = trace.labels_trace(indxLastSwitch,1);
+    if ~ismember(curr_state, all_labels)
+        curr_state = all_labels(1);
+    end
     % Inputs are fully needed for predicition
     sim_ud = trace.ud;
 

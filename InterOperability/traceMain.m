@@ -45,8 +45,9 @@ function [t_seg,t_cluster,t_charac,t_extract, mse, omega_seg, omega_group, norma
     % Eval chpoints
     omega_seg = 0.0;
     for i = trainData
-        omega_seg = omega_seg + FnEvalChangePoints(trace(i).chpoints, trace(i).true_chps);
+        omega_seg = omega_seg + FnEvalChangePoints(trace(i).chpoints(2:end-1), trace(i).true_chps(2:end-1));
     end
+    omega_seg = omega_seg / length(trainData);
     
     %% Determine clustered trace segments
     
@@ -76,7 +77,7 @@ function [t_seg,t_cluster,t_charac,t_extract, mse, omega_seg, omega_group, norma
     mse_vec = zeros(length(trainData),num_var*(1+offsetCluster));
     mse_per_group = [];
     for i = 1:length(trainData)
-        [mse_vec(i,:), ~, mpg, gs] = FnEvalFlowAccuracy(trace(trainData(i)), ode);
+        [mse_vec(i,:), train_traces(i), mpg, gs] = FnEvalFlowAccuracy(trace(trainData(i)), ode);
         for g = 1:length(mpg)
             if length(mse_per_group) < g
                 mse_per_group(g) = mpg(g);
@@ -89,6 +90,7 @@ function [t_seg,t_cluster,t_charac,t_extract, mse, omega_seg, omega_group, norma
     end
     omega_group = sum(mse_per_group .* group_sizes) / sum(group_sizes) * (1 + abs(num_states - length(mse_per_group)));
     
+    save("train-traces", 'train_traces')
     %% Training and Eval
     
     % Choose which algorithm to use for training

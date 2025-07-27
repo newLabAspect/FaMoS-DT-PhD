@@ -45,8 +45,8 @@ for label = 1:len_labels
     
     % No conversion to a continuous model, denoted by -1s in ODE
     A_Bu = mrdivide(x_seg_plus,[x_seg;ud_seg]);
-    %dA = A_Bu(:,1:num_vars);
-    %dB = A_Bu(:,num_vars+1:end);
-    ode(label) = {A_Bu}; %{[dA, dB]};
+    dA = A_Bu(:,1:num_vars);
+    dB = A_Bu(:,num_vars+1:end);
+    ode(label) = {[dA, dB]};
 end
 end
