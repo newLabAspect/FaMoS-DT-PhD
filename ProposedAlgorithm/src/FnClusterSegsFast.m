@@ -95,7 +95,7 @@ function combined_metric = computeSimilarityMatrix(x, segIndex_var, num, offset)
 %   The ideas to shorten the segments to a common length and carry out two
 %   comparisons - one aligned at the end and one aligned at the start - are
 %   used to compute the similarity matrix
-    global winlen
+    trimlen = 5;
 
     combined_metric = cell(num,1);
     % Comparison Metric computed for each output variable
@@ -106,13 +106,13 @@ function combined_metric = computeSimilarityMatrix(x, segIndex_var, num, offset)
         for i = 1:size(segIndex_curr,1)
             % Start and end trimmed to ignore, e.g., peaks in derivatives
             % caused by changepoints
-            start_i = segIndex_curr(i,1)+winlen;
-            end_i = segIndex_curr(i,2)-winlen;
+            start_i = segIndex_curr(i,1)+trimlen;
+            end_i = segIndex_curr(i,2)-trimlen;
             seg_i = x(start_i:end_i,k+offset);
             % Pairwise comparison second index
             for j = i:size(segIndex_curr,1)
-                start_j = segIndex_curr(j,1)+winlen;
-                end_j = segIndex_curr(j,2)-winlen;
+                start_j = segIndex_curr(j,1)+trimlen;
+                end_j = segIndex_curr(j,2)-trimlen;
                 seg_j = x(start_j:end_j,k+offset);
                 common_len = min(size(seg_i,1),size(seg_j,1));
                 
