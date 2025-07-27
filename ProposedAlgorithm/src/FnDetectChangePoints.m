@@ -65,7 +65,7 @@ function locs = findChangePoints(xout,depth,starting,ending,max_depth)
 %   changepoints are detected on the selected derivative and used to
 %   formulate new intervals which are examined in the next recursion with
 %   the next derivative. All collected changepoints are merged to one set.
-    global windowSize chp_depths
+    global windowSize chp_depths num_peaks
 
     % Check for terminal cases 
     locs = [];
@@ -77,7 +77,10 @@ function locs = findChangePoints(xout,depth,starting,ending,max_depth)
     dist = computeDistance(der);
 
     % Peaks in distance indicate change in dynamic behavior (introduce para for minimal peak height?)
-    [~,locsDist] = findpeaks(dist); %,"MinPeakHeight",6);
+    [~,locsDist] = findpeaks(dist, 'MinPeakDistance', windowSize, 'SortStr','descend'); %,"MinPeakHeight",6);
+    if num_peaks ~= inf && length(locsDist) > num_peaks
+        locsDist = locsDist(1:num_peaks);
+    end
     % Convert index on interval to index on trace
     locsHere = locsDist+starting-1;
     locsHere = sort(locsHere);
